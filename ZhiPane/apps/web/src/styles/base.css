@@ -1,0 +1,79 @@
+/* ============================================================
+   Base — reset, typography, scrollbar, shared animations.
+   ============================================================ */
+
+* { box-sizing: border-box; }
+
+body { margin: 0; background: var(--bg); }
+
+button, input, textarea { font: inherit; color: inherit; }
+
+h1, h2, h3, h4 { margin: 0; }
+
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.muted { color: var(--muted); }
+.small { font-size: var(--text-sm); }
+
+/* Centered loading / empty screens (the app-shell .center overrides this
+   for the main column — kept here only for standalone centered views). */
+.center { display: grid; min-height: 100vh; place-items: center; color: var(--muted); }
+
+.error { color: var(--danger); font-size: var(--text-sm); margin: 6px 0 0; }
+
+/* ------- Scrollbar ------- */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ------- Shared animations ------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes cmdkIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes skel-pulse {
+  0%, 100% { opacity: .7; }
+  50% { opacity: 1; }
+}
+@keyframes skel-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ------- Global hover transitions (no more "jumps") ------- */
+a, button,
+.tree-item, .sb-link, .sb-nav-item, .sb-menu-item, .sb-space-row, .sb-space-btn,
+.rp-outline-item, .crumb-link, .crumb-current, .more-item, .cmdk-item, .home-row,
+.wiki-tab, .topic-item, .list-row, .result-card, .src-chip, .chip, .rp-related-item,
+.stat-card, .link-btn, .icon-btn, .sb-mini, .ml-block-action, .ml-block-del,
+.block-menu-item, .bub-btn, .block-handle-grip, .upload-btn, .fav-toggle, .rp-fav,
+.rp-tab, .tag, .badge, .ml-block, .cite-badge, .home-qa, .sb-section-add, .ss-trigger,
+.ss-item, .tb-btn, .tb-menu-item, .slash-item, .callout-emoji, .callout-color,
+.toggle-chevron, .math-act, .embed-act, .drawio-act, .excalidraw-act, .mermaid-act,
+.media-act, .rp-ai-box, .crumb-mid, .wiki-row, .topic-pop, .graph-empty {
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}

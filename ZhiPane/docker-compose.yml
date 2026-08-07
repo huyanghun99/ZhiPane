@@ -1,0 +1,40 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: zhipane-db
+    environment:
+      POSTGRES_USER: zhipane
+      POSTGRES_PASSWORD: zhipane
+      POSTGRES_DB: zhipane
+    ports:
+      - "5432:5432"
+    volumes:
+      - zhipane_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zhipane -d zhipane"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zhipane-app
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://zhipane:zhipane@db:5432/zhipane
+      PORT: 39280
+      UPLOAD_DIR: /data/uploads
+    ports:
+      - "39280:39280"
+    volumes:
+      - zhipane_uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  zhipane_pg:
+  zhipane_uploads:

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Local env / secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Uploaded files & local data
+data/
+uploads/
+*.log
+
+# Database files
+*.db
+*.sqlite
+*.dump
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*:Zone.Identifier

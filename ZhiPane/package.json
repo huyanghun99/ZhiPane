@@ -1,0 +1,27 @@
+{
+  "name": "zhipane",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ZhiPane 知织 - Personal LLM Wiki starter implementation",
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:server": "pnpm --filter @zhipane/server dev",
+    "dev:web": "pnpm --filter @zhipane/web dev",
+    "build": "pnpm -r build",
+    "build:packages": "pnpm --filter @zhipane/shared --filter @zhipane/editor --filter @zhipane/db --filter @zhipane/ai build",
+    "typecheck": "pnpm build:packages && pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "db:migrate": "pnpm --filter @zhipane/server db:migrate",
+    "zip": "node scripts/create-release-zip.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^2.1.8"
+  }
+}

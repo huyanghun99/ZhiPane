@@ -1,0 +1,16 @@
+/* ============================================================
+   ZhiPane styles entry point.
+   Design tokens are the single source of truth; everything else
+   is split by concern and imported in cascade order:
+     tokens  → theme overrides  → base  → layout  → editor  → components
+   ============================================================ */
+
+@import './styles/tokens.css';
+@import './styles/themes/dark.css';
+@import './styles/base.css';
+@import './styles/layout.css';
+@import './styles/editor.css';
+@import './styles/components.css';
+@import './features/tasks/tasks.css';
+@import './features/tasks/components.css';
+@import './features/nav/components.css';

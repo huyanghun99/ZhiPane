@@ -1,0 +1,71 @@
+/* ============================================================
+   Design tokens — single source of visual truth.
+   Light theme defaults live here; themes/dark.css overrides colors.
+   ============================================================ */
+
+:root {
+  /* ------- Color — ZhiPane green (ZenithFlow-inspired) ------- */
+  --bg: #fafafa;          /* neutral-50 — clean light canvas */
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;  /* neutral-100 */
+  --surface-3: #e4e4e7;  /* neutral-200 */
+  --text: #18181b;        /* neutral-900 */
+  --text-2: #3f3f46;      /* neutral-700 */
+  --muted: #71717a;       /* neutral-500 */
+  --primary: #22c55e;     /* brand-500 */
+  --primary-hover: #16a34a;/* brand-600 */
+  --primary-soft: #dcfce7;/* green-100 wash */
+  --primary-strong: #15803d;
+  --brand-500: #22c55e;
+  --brand-400: #4ade80;
+  --brand-300: #86efac;
+  --border: #e4e4e7;      /* neutral-200 */
+  --border-strong: #d4d4d8;/* neutral-300 */
+  --danger: #dc2626;
+  --success: #16a34a;
+  --ok: var(--success);
+  --warn: #d97706;
+
+  /* ------- Spacing (4px steps) ------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+
+  /* ------- Font sizes ------- */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 17px;
+  --text-xl: 21px;
+  --text-2xl: 26px;
+
+  /* ------- Radius ------- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius: 12px;          /* legacy alias */
+  --radius-xl: 18px;       /* legacy alias */
+
+  /* ------- Shadow ------- */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, .05);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, .08);
+  --shadow-pop: 0 8px 30px rgba(16, 24, 40, .14);
+  --shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 10px 30px rgba(16, 24, 40, .07);
+
+  /* ------- Motion ------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+
+  /* ------- Fonts ------- */
+  --font-sans: Inter, "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  font-family: var(--font-sans);
+  color: var(--text);
+}
