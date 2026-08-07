@@ -27,3 +27,6 @@ uploads/
 .idea/
 .vscode/
 *:Zone.Identifier
+
+# Core dumps
+core.*
