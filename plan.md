@@ -7,7 +7,7 @@ ZhiPane 是融合「知识笔记 + 任务管理 + 常用导航」的个人一体
 **参考仓库（已全部清除）：**
 > 早期阶段曾临时克隆若干参考仓库用于借鉴交互与配色（任务管理参考 ZenithFlow2.0、导航参考 ZenithFlow / PersonalNav）。这些参考仓库已完成的使命，其运行时代码与本地克隆目录（`/workspace/PersonalNav_ref/`、`/workspace/ZenithFlow2.0/`）均已删除，ZhiPane 不依赖任何外部参考仓库，所有功能均为基于本仓库 monorepo 的原生实现。
 
-**架构决策：** 直接克隆 `mindloom` 仓库到 `/workspace/ZhiPane/`，在其完整 monorepo 基础上逐步改造成 ZhiPane（保留其成熟后端，不重写）。
+**架构决策：** 直接克隆 `mindloom` 仓库到 `/workspace/`（即本项目根目录），在其完整 monorepo 基础上逐步改造成 ZhiPane（保留其成熟后端，不重写）。
 - 数据库：**保留 PostgreSQL + pgvector**（docker-compose 已就绪），用于知识向量化与后续 AI 接入，不切换到本地存储。
 - 前端基座：React19 + Vite + TypeScript（mindloom 已有）+ Tailwind（吸收 ZenithFlow2.0 的配色 token，支持深/浅色）。
 - 后端：Hono API + Drizzle ORM + Postgres/pgvector（mindloom 已有），认证沿用 JWT/cookie。

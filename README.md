@@ -7,12 +7,11 @@ ZhiPane·知行台是一个连接**任务、知识笔记与常用资源**的个�
 - **常用导航**：分组与书签管理、HTML5 拖拽排序、可配置搜索引擎、打开统计、JSON 备份导入导出
 - **AI 能力**：PostgreSQL + pgvector 向量化与严格引用的 RAG 问答
 
-数据存储统一于 PostgreSQL（Drizzle ORM），按 workspace 作用域隔离；前端为 React + Vite，后端为 Hono，整体为 pnpm monorepo（位于 `ZhiPane/`）。
+数据存储统一于 PostgreSQL（Drizzle ORM），按 workspace 作用域隔离；前端为 React + Vite，后端为 Hono，整体为 pnpm monorepo（仓库根即项目根）。
 
 ## 快速开始
 
 ```bash
-cd ZhiPane
 cp .env.example .env        # 数据库默认 zhipane:zhipane@127.0.0.1:5432/zhipane
 docker compose up -d db     # 启动 Postgres + pgvector
 pnpm install
@@ -30,7 +29,6 @@ bash start-dev.sh           # 或分别 pnpm start（后端 39280）与 pnpm --f
 ## 项目结构
 
 ```text
-ZhiPane/
   apps/web        React/Vite 客户端（features/tasks、features/nav、features/notes…）
   apps/server     Hono API 服务器（routes/tasks.ts、routes/nav.ts、routes/wiki…）
   packages/db     Drizzle schema 与迁移
@@ -46,4 +44,4 @@ ZhiPane/
 
 ## 文档
 
-更详细的设计、实施计划与特性说明见 `ZhiPane/docs/`（`AGENTS.md`、`FEATURES.md`、`plan02~04.md`、`DESIGN-v1.3.md` 等）。
+更详细的设计、实施计划与特性说明见 `docs/`（`AGENTS.md`、`FEATURES.md`、`plan02~04.md`、`DESIGN-v1.3.md` 等）。
