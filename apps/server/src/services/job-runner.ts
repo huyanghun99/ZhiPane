@@ -322,6 +322,43 @@ export async function runOneJob(workerId = `worker-${process.pid}`): Promise<boo
         RETURNING id
       `);
       logger.info('rate_limit cleanup done', { deleted: res.rows.length });
+    } else if (job.type === 'system.daily_page_consolidation') {
+      // Nightly batch: re-run AI analysis on every page updated since local
+      // midnight. Scans the day's edits and enqueues a page.process_llm per page
+      // (deduped per page). Disabled spaces are safely skipped by processPageLlm.
+      const hour = await getAutoOrganizeHour();
+      const res = await db.execute<any>(sql`
+        SELECT id, content_version, workspace_id, space_id
+        FROM pages
+        WHERE status = 'normal'
+          AND updated_at >= date_trunc('day', now())
+          AND llm_process_status NOT IN ('processing', 'pending')
+      `);
+      let count = 0;
+      for (const p of res.rows) {
+        try {
+          await enqueueJob({
+            workspaceId: p.workspace_id,
+            spaceId: p.space_id,
+            entityType: 'page',
+            entityId: p.id,
+            type: 'page.process_llm',
+            sourceVersion: Number(p.content_version),
+            runAfterSeconds: 0,
+            priority: 150,
+            dedupeKey: `page:${p.id}:process_llm`
+          });
+          count++;
+        } catch (err) {
+          logger.warn('daily consolidation: enqueue failed', {
+            pageId: p.id,
+            err: err instanceof Error ? err.message : String(err)
+          });
+        }
+      }
+      logger.info('daily page consolidation enqueued', { count, hour });
+      // Re-schedule the next run (fixes the no-reschedule defect).
+      await enqueueDailyConsolidation();
     } else if (job.type === 'knowledge.evaluate_lifecycle') {
       // Phase 5 (F4): daily lifecycle evaluation. Generates Suggestions only
       // (never archives), so failing mid-run is safe to retry.
@@ -390,6 +427,13 @@ export function startJobRunner(): void {
     logger.warn('failed to enqueue rate_limit cleanup', { err: err instanceof Error ? err.message : String(err) })
   );
 
+  // Nightly auto-organize: schedule the first run at the configured hour. The job
+  // re-enqueues its own successor on every successful run, so it persists across
+  // restarts without stacking duplicates.
+  void enqueueDailyConsolidation().catch((err) =>
+    logger.warn('failed to enqueue daily page consolidation', { err: err instanceof Error ? err.message : String(err) })
+  );
+
   timer = setInterval(() => {
     const job = runOneJob();
     runningJob = job;
@@ -421,6 +465,45 @@ async function enqueueCleanupRateLimits(): Promise<void> {
     )
     INSERT INTO jobs (entity_type, type, status, priority, dedupe_key, run_after, payload)
     SELECT 'system', 'system.cleanup_rate_limits', 'pending', 300, 'system:cleanup_rate_limits', now(), '{}'::jsonb
+    WHERE NOT EXISTS (SELECT 1 FROM existing)
+  `);
+}
+
+/**
+ * Read the configured hour (0-23, server local time) for the nightly
+ * auto-organize run. Stored in app_settings (key 'auto_organize'); defaults to 3.
+ */
+async function getAutoOrganizeHour(): Promise<number> {
+  try {
+    const res = await db.execute<any>(sql`SELECT value->>'hour' AS hour FROM app_settings WHERE key='auto_organize' LIMIT 1`);
+    const n = Number(res.rows[0]?.hour);
+    if (Number.isInteger(n) && n >= 0 && n <= 23) return n;
+  } catch {
+    // app_settings may not exist yet (pre-migration) — fall back to default.
+  }
+  return 3;
+}
+
+/**
+ * Schedule the next nightly page consolidation at the configured hour. Deduped on
+ * a fixed dedupeKey so restarts never stack duplicates (we only cancel *pending*
+ * daily jobs — never the one currently running, which is about to finish).
+ *
+ * This fixes the self-scheduling defect in enqueueCleanupRateLimits: instead of
+ * relying on a daily process restart to re-queue, the daily job re-enqueues its
+ * own successor on every successful run.
+ */
+async function enqueueDailyConsolidation(): Promise<void> {
+  const hour = await getAutoOrganizeHour();
+  const target = sql`(date_trunc('day', now()) + make_interval(hours => ${hour}) + CASE WHEN (date_trunc('day', now()) + make_interval(hours => ${hour})) <= now() THEN interval '1 day' ELSE interval '0' END)`;
+  await db.execute(sql`
+    WITH existing AS (
+      SELECT id FROM jobs
+      WHERE dedupe_key = 'system:daily_page_consolidation' AND status = 'pending'
+      LIMIT 1
+    )
+    INSERT INTO jobs (entity_type, type, status, priority, dedupe_key, run_after, payload)
+    SELECT 'system', 'system.daily_page_consolidation', 'pending', 300, 'system:daily_page_consolidation', ${target}, '{}'::jsonb
     WHERE NOT EXISTS (SELECT 1 FROM existing)
   `);
 }

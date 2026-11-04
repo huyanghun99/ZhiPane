@@ -51,6 +51,7 @@ export function activeRouteFromPath(pathname: string): MainRoute {
   if (pathname === '/search') return 'search';
   if (pathname === '/archive') return 'archive';
   if (pathname === '/tasks') return 'tasks';
+  if (pathname === '/nav') return 'nav';
   if (/^\/p\//.test(pathname)) return 'page';
   return 'home';
 }

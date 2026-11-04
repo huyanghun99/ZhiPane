@@ -1,5 +1,7 @@
-/* Navigation view (PersonalNav integration) — neon-green glassmorphism,
-   tuned to ZhiPane tokens so it matches the rest of the workbench. */
+/* Navigation view — token-driven glassmorphism.
+   All colors derive from theme tokens so the view looks native in BOTH
+   light and dark modes (previously hardcoded dark glass values made the
+   whole page render as a dark island inside the light theme). */
 .nav-view {
   height: 100%;
   overflow-y: auto;
@@ -7,13 +9,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: linear-gradient(180deg, var(--bg) 0%, #020617 100%);
+  background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--primary) 5%, var(--bg)) 100%);
 }
 
 .nav-header { text-align: center; margin-bottom: var(--space-2); width: 100%; }
 .nav-clock {
   font-size: 4rem; font-weight: 700; color: var(--primary);
-  text-shadow: 0 0 25px rgba(34, 197, 94, 0.25); letter-spacing: -1px; line-height: 1.1;
+  text-shadow: 0 0 25px color-mix(in srgb, var(--primary) 30%, transparent); letter-spacing: -1px; line-height: 1.1;
 }
 .nav-date { color: var(--muted); font-size: 0.95rem; opacity: 0.85; margin-bottom: var(--space-5); }
 
@@ -28,7 +30,7 @@
   backdrop-filter: blur(12px); font-size: 1.1rem; outline: none; color: var(--text);
   box-shadow: var(--shadow-md);
 }
-.nav-search:focus { border-color: var(--primary); box-shadow: 0 0 20px rgba(34, 197, 94, 0.15); }
+.nav-search:focus { border-color: var(--primary); box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 18%, transparent); }
 .nav-engine-btn {
   position: absolute; right: 10px; width: 34px; height: 34px; border-radius: 8px;
   border: none; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -40,39 +42,39 @@
 .nav-loading { color: var(--muted); text-align: center; padding: var(--space-8); }
 
 .nav-group { margin-bottom: var(--space-6); border-radius: 16px; transition: transform 0.2s; }
-.nav-group.drag-over { background: rgba(34, 197, 94, 0.05); border: 2px dashed var(--primary); }
+.nav-group.drag-over { background: color-mix(in srgb, var(--primary) 6%, transparent); border: 2px dashed var(--primary); }
 .nav-group-head { display: flex; align-items: center; margin-bottom: var(--space-3); padding-left: 5px; }
 .nav-group-title {
   font-size: 1.05rem; font-weight: 600; color: var(--highlight, var(--primary));
-  background: rgba(34, 197, 94, 0.1); padding: 6px 14px; border-radius: 8px;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: color-mix(in srgb, var(--primary) 12%, transparent); padding: 6px 14px; border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
 }
 .nav-group-actions { margin-left: 10px; display: none; gap: 8px; }
 .nav-view.edit .nav-group-actions { display: flex; }
 .nav-view .nav-group-head { cursor: default; }
 .nav-view.edit .nav-group-head { cursor: grab; }
 
-.nav-mini { border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; }
+.nav-mini { border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-2); }
 .nav-mini.danger { background: var(--danger); color: #fff; }
 
 .nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; min-height: 100px; padding: 4px; }
 
 .nav-card {
-  aspect-ratio: 1/1; background: var(--glass-bg, rgba(31, 41, 55, 0.6)); backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08)); border-radius: 18px;
+  aspect-ratio: 1/1; background: var(--surface); backdrop-filter: blur(12px);
+  border: 1px solid var(--border); border-radius: 18px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   text-decoration: none; cursor: pointer; transition: all 0.2s; position: relative; padding: 10px; user-select: none;
   box-shadow: var(--shadow-sm);
 }
 .nav-card:hover {
   background: var(--surface-2); transform: translateY(-4px); border-color: var(--primary);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(34, 197, 94, 0.15);
+  box-shadow: var(--shadow-md), 0 0 15px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 .nav-text-icon {
-  width: 48px; height: 48px; background: rgba(17, 24, 39, 0.5); border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 48px; height: 48px; background: var(--surface-2); border: 1px solid var(--border);
   border-radius: 12px; display: flex; align-items: center; justify-content: center;
   font-size: 1.6rem; font-weight: 700; color: var(--primary); margin-bottom: 10px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3); text-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+  box-shadow: inset 0 2px 4px color-mix(in srgb, var(--text) 8%, transparent); text-shadow: 0 0 10px color-mix(in srgb, var(--primary) 40%, transparent);
 }
 .nav-card:hover .nav-text-icon { color: var(--secondary, var(--highlight)); border-color: var(--primary); }
 .nav-card span { font-size: 0.85rem; color: var(--text-2); font-weight: 500; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -90,20 +92,20 @@
 .nav-card-edit-overlay { position: absolute; inset: 0; z-index: 4; display: none; }
 .nav-view.edit .nav-card-edit-overlay { display: block; }
 
-.nav-card.nav-add { border: 1px dashed rgba(255, 255, 255, 0.15); background: transparent; box-shadow: none; }
+.nav-card.nav-add { border: 1px dashed var(--border-strong); background: transparent; box-shadow: none; }
 .nav-card.nav-add:hover { border-color: var(--primary); background: rgba(34, 197, 94, 0.05); }
 .nav-card.nav-add svg { color: var(--muted); }
 .nav-card.nav-add:hover svg { color: var(--primary); }
 
 .nav-controlbar {
   position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-  background: rgba(17, 24, 39, 0.9); backdrop-filter: blur(16px); padding: 8px 24px;
-  border-radius: 50px; display: flex; gap: 16px; box-shadow: var(--shadow-lg);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08)); z-index: 100; align-items: center;
+  background: var(--surface); backdrop-filter: blur(16px); padding: 8px 24px;
+  border-radius: 50px; display: flex; gap: 16px; box-shadow: var(--shadow-pop);
+  border: 1px solid var(--border); z-index: 100; align-items: center;
 }
 .nav-ctrl { background: none; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--text-2); display: flex; align-items: center; gap: 6px; transition: 0.2s; white-space: nowrap; }
 .nav-ctrl:hover { color: var(--primary); }
-.nav-ctrl.primary { background: var(--primary); color: #000; padding: 8px 20px; }
+.nav-ctrl.primary { background: var(--primary); color: #fff; padding: 8px 20px; }
 .nav-ctrl.primary:hover { background: var(--secondary, var(--highlight)); transform: translateY(-1px); }
 .nav-ctrl-sep { width: 1px; height: 16px; background: var(--border); }
 
@@ -115,7 +117,7 @@
    the document flow and appears unclickable / invisible. */
 .nav-modal-overlay {
   position: fixed; inset: 0; z-index: 1000;
-  background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center; padding: 24px;
 }
 .nav-modal {

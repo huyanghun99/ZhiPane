@@ -84,13 +84,15 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
 
   // Latest-value refs so the (stable) save closures never read stale state.
   const titleRef = useRef(title); titleRef.current = title;
-  const docRef = useRef(doc); docRef.current = doc;
+  const docRef = useRef<PMNode>(emptyDoc);
   const pageRef = useRef(page); pageRef.current = page;
+  const dirtyRef = useRef(dirty); dirtyRef.current = dirty;
 
   const syncFromServer = useCallback((p: PageDetail, remount: boolean) => {
     const content = (p.contentJson && Object.keys(p.contentJson).length ? p.contentJson : emptyDoc) as PMNode;
     setTitle(p.title ?? '');
     setDoc(content);
+    docRef.current = content;
     setSeed(content);
     setDirty(false);
     if (remount) setEk((k) => k + 1);
@@ -187,16 +189,7 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
     }
   }, [showConflict, toast]);
 
-  const manualSave = useMutation({
-    mutationFn: () => doSave(false),
-    onSuccess: (res) => {
-      setDirty(false);
-      patchTreeNode(res.page);
-      saveDraft(res.page.id, { title: res.page.title, doc: res.page.contentJson, savedAt: Date.now() });
-      toast.success('已保存');
-    },
-    onError: handleSaveError
-  });
+  // saveNow is defined after `autoSave` (below) so it can close over it.
 
   const autoSave = useMutation({
     mutationFn: () => doSave(true),
@@ -208,8 +201,15 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
     onError: handleSaveError
   });
 
+  // "立即同步" — force a save right now (save button / Ctrl-S / blur / unload
+  // flush). Reuses the same autoSave pipeline; saving is automatic, this just
+  // bypasses the debounce timer.
+  const saveNow = useCallback(() => {
+    if (dirtyRef.current && !autoSave.isPending) autoSave.mutate();
+  }, [autoSave]);
+
   const savingRef = useRef(false);
-  useEffect(() => { savingRef.current = autoSave.isPending || manualSave.isPending; }, [autoSave.isPending, manualSave.isPending]);
+  useEffect(() => { savingRef.current = autoSave.isPending; }, [autoSave.isPending]);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!dirty || !page) return;
@@ -218,7 +218,35 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
       if (!savingRef.current) autoSave.mutate();
     }, 2000);
     return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
-  }, [dirty, title, doc, page?.id, autoSave]);
+  }, [dirty, title, page?.id, autoSave]);
+
+  // Flush on blur / tab hidden / unload so work is never lost even if the 2s
+  // debounce hasn't fired. (The 800ms localStorage draft is the ultimate safety
+  // net; this just keeps the server copy fresher.)
+  useEffect(() => {
+    const flush = () => { if (dirtyRef.current && !autoSave.isPending) autoSave.mutate(); };
+    const onVis = () => { if (document.visibilityState === 'hidden') flush(); };
+    window.addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('blur', flush);
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('blur', flush);
+    };
+  }, [autoSave]);
+
+  // Ctrl/Cmd+S → immediate sync.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveNow();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [saveNow]);
 
   const exportPage = useCallback(async () => {
     if (!page) return;
@@ -319,26 +347,52 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
   }, [space.id, qc, toast, onSelectPage]);
 
   // Publish save state + actions to the top bar.
-  const saving = manualSave.isPending || autoSave.isPending;
+  const saving = autoSave.isPending;
   const saveState: SaveState = conflict
     ? 'conflict'
-    : manualSave.isError || autoSave.isError
+    : autoSave.isError
     ? 'error'
     : saving ? 'saving' : dirty ? 'dirty' : page ? 'saved' : 'idle';
+  // Keep the latest action callbacks in a ref so the publishing effect below
+  // can subscribe only to stable primitives (page?.id / saveState / setStatus).
+  // Without this, callbacks such as `requestDelete` (rebuilt every render because
+  // useDeletePage captures a fresh inline arrow) would change on every render,
+  // re-running this effect every render → setStatus mutates the editorStatus
+  // context → every consumer re-renders → an infinite loop that pegs the CPU
+  // (React 19 does not trip the max-depth guard for setState inside a passive effect).
+  const actionsRef = useRef({
+    onSave: () => {},
+    onShare: () => {},
+    onExport: () => {},
+    onImport: () => {},
+    onDelete: () => {},
+    onPrint: () => {}
+  });
+  actionsRef.current = {
+    onSave: () => saveNow(),
+    onShare: () => setShowShare(true),
+    onExport: () => { void exportPage(); },
+    onImport: () => setShowImport(true),
+    onDelete: () => { void requestDelete(); },
+    onPrint: () => window.print()
+  };
+
   useEffect(() => {
     setStatus({
       hasPage: !!page,
       saveState,
-      pageTitle: page?.title,
-      onSave: () => manualSave.mutate(),
-      onShare: () => setShowShare(true),
-      onExport: exportPage,
-      onImport: () => setShowImport(true),
-      onDelete: requestDelete,
-      onPrint: () => window.print()
+      pageTitle: title,
+      onSave: () => actionsRef.current.onSave(),
+      onShare: () => actionsRef.current.onShare(),
+      onExport: () => actionsRef.current.onExport(),
+      onImport: () => actionsRef.current.onImport(),
+      onDelete: () => actionsRef.current.onDelete(),
+      onPrint: () => actionsRef.current.onPrint()
     });
-    return () => setStatus({ hasPage: false, saveState: 'idle' });
-  }, [page?.id, saveState, exportPage, requestDelete, setStatus]);
+  }, [page?.id, title, saveState, setStatus]);
+
+  // Clear the top-bar status when this editor unmounts (page switch / close).
+  useEffect(() => () => setStatus({ hasPage: false, saveState: 'idle' }), [setStatus]);
 
   const fav = page ? isFavorite(page.id) : false;
 
@@ -425,8 +479,8 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
         workspaceId={workspace.id}
         spaceId={space.id}
         pageId={page.id}
-        onChange={({ contentJson }) => { setDoc(contentJson); setDirty(true); }}
-        onSave={() => manualSave.mutate()}
+        onChange={({ contentJson }) => { docRef.current = contentJson; setDirty(true); }}
+        onSave={() => saveNow()}
       />
 
       {conflict && (

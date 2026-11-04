@@ -18,6 +18,12 @@ export function useDeletePage(space: Space | null, onAfterDelete?: (id: string) 
   const toast = useToast();
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
+  // Hold the callback in a ref so it never enters the returned useCallback's
+  // deps — otherwise a fresh inline arrow on each render would rebuild the
+  // callback every render (and cascade into consumers that depend on it).
+  const onAfterDeleteRef = useRef(onAfterDelete);
+  onAfterDeleteRef.current = onAfterDelete;
+
   return useCallback((page: { id: string; title: string }) => {
     if (!space) return;
     const key = ['page-tree', space.id];
@@ -30,7 +36,7 @@ export function useDeletePage(space: Space | null, onAfterDelete?: (id: string) 
         nodes.filter((n) => n.id !== page.id).map((n) => ({ ...n, children: prune(n.children) }));
       return { tree: prune(old.tree) };
     });
-    onAfterDelete?.(page.id);
+    onAfterDeleteRef.current?.(page.id);
 
     const commit = async () => {
       timers.current.delete(page.id);
@@ -57,5 +63,5 @@ export function useDeletePage(space: Space | null, onAfterDelete?: (id: string) 
         }
       }
     });
-  }, [qc, toast, space?.id, onAfterDelete]);
+  }, [qc, toast, space?.id]);
 }

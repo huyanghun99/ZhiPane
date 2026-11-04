@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { authMiddleware, type AppEnv } from '../middleware/auth';
 import { db } from '../db/client';
 import { aiConfigs } from '@zhipane/db';
@@ -95,4 +95,33 @@ settingsRoutes.put('/ai-config', async (c) => {
     await db.insert(aiConfigs).values(values);
   }
   return c.json({ ok: true });
+});
+
+// Instance-level app settings (e.g. the hour of the nightly auto-organize run).
+settingsRoutes.get('/app', async (c) => {
+  const res = await db.execute<{ value: { hour?: unknown } | null }>(
+    sql`SELECT value FROM app_settings WHERE key = 'auto_organize' LIMIT 1`
+  );
+  const raw = res.rows[0]?.value;
+  const hour = raw && typeof raw === 'object' && 'hour' in raw ? Number((raw as { hour: unknown }).hour) : 3;
+  return c.json({ hour: Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 3 });
+});
+
+settingsRoutes.put('/app', async (c) => {
+  let body: { hour?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON' }, 400);
+  }
+  const hour = Number(body?.hour);
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+    return c.json({ error: 'hour must be an integer between 0 and 23' }, 400);
+  }
+  await db.execute(sql`
+    INSERT INTO app_settings (key, value, updated_at)
+    VALUES ('auto_organize', ${JSON.stringify({ hour })}::jsonb, now())
+    ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify({ hour })}::jsonb, updated_at = now()
+  `);
+  return c.json({ ok: true, hour });
 });

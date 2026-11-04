@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { ReactNodeViewRenderer, NodeViewContent, type NodeViewProps } from '@tiptap/react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { createZhipaneBlock } from './blockContract';
 import { BlockFrame } from './BlockFrame';
 
-function ToggleView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
+const ToggleView = memo(function ToggleView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
   const [open, setOpen] = useState(true);
   const summary = (node.attrs.summary as string) || '';
 
@@ -28,7 +28,7 @@ function ToggleView({ node, updateAttributes, selected, deleteNode }: NodeViewPr
       </div>
     </BlockFrame>
   );
-}
+});
 
 export const Toggle = createZhipaneBlock({
   name: 'toggle',

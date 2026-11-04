@@ -134,9 +134,9 @@
 .mini-box { width: 13px; height: 13px; border: 2px solid var(--border-strong); border-radius: 4px; }
 .prio { font-size: var(--text-xs); padding: 1px 7px; border-radius: 999px; font-weight: 600; }
 .prio-none { background: var(--surface-3); color: var(--muted); }
-.prio-low { background: color-mix(in srgb, #3b82f6 15%, transparent); color: #3b82f6; }
-.prio-medium { background: color-mix(in srgb, #f59e0b 18%, transparent); color: #d97706; }
-.prio-high { background: color-mix(in srgb, #ef4444 16%, transparent); color: #ef4444; }
+.prio-low { background: color-mix(in srgb, var(--info) 15%, transparent); color: var(--info); }
+.prio-medium { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.prio-high { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
 .kanban-proj { font-size: var(--text-xs); font-weight: 600; }
 .task-status.slim { width: 100%; margin-top: 2px; }
 

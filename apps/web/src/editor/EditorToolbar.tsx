@@ -1,8 +1,14 @@
 /**
  * F4: Editor top toolbar — sticky formatting bar with text color, highlight,
  * heading, insert actions. Shown only when the editor is focused/active.
+ *
+ * Active states are read through `useEditorState` (a narrow selector) instead
+ * of reading `editor.isActive(...)` during render. This keeps the toolbar
+ * updating with the selection while the editor itself does NOT re-render on
+ * every transaction (we set `shouldRerenderOnTransaction: false` in RichEditor
+ * for performance), matching docmost's pattern.
  */
-import { type Editor } from '@tiptap/react';
+import { useEditorState, type Editor } from '@tiptap/react';
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough, Code,
   Heading1, Heading2, Heading3, List, ListOrdered, ListChecks,
@@ -10,6 +16,7 @@ import {
   Palette, Highlighter, Link2, Undo2, Redo2
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useDialog } from '../components/Dialog';
 
 const TEXT_COLORS = [
   { label: '默认', value: '' },
@@ -35,6 +42,32 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
   const [showHighlights, setShowHighlights] = useState(false);
   const colorRef = useRef<HTMLDivElement>(null);
   const hlRef = useRef<HTMLDivElement>(null);
+  const { prompt } = useDialog();
+
+  // Narrow subscription: only re-renders this toolbar (not the editor tree)
+  // when the active marks/nodes actually change.
+  const state = useEditorState({
+    editor,
+    selector: ({ editor }) => ({
+      h1: editor.isActive('heading', { level: 1 }),
+      h2: editor.isActive('heading', { level: 2 }),
+      h3: editor.isActive('heading', { level: 3 }),
+      bold: editor.isActive('bold'),
+      italic: editor.isActive('italic'),
+      underline: editor.isActive('underline'),
+      strike: editor.isActive('strike'),
+      code: editor.isActive('code'),
+      highlight: editor.isActive('highlight'),
+      bulletList: editor.isActive('bulletList'),
+      orderedList: editor.isActive('orderedList'),
+      taskList: editor.isActive('taskList'),
+      blockquote: editor.isActive('blockquote'),
+      codeBlock: editor.isActive('codeBlock'),
+      link: editor.isActive('link'),
+      table: editor.isActive('table'),
+    }),
+  });
+  const s = state ?? {};
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -60,16 +93,16 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
 
   const sep = () => <span className="tb-sep" />;
 
-  const setLink = () => {
+  const setLink = async () => {
     const prev = editor.getAttributes('link').href as string | undefined;
-    const url = window.prompt('链接地址', prev ?? 'https://');
+    const url = await prompt({ title: '链接地址', defaultValue: prev ?? 'https://', placeholder: 'https://…' });
     if (url === null) return;
     if (url === '') { editor.chain().focus().extendMarkRange('link').unsetLink().run(); return; }
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
-  const insertImage = () => {
-    const url = window.prompt('图片地址');
+  const insertImage = async () => {
+    const url = await prompt({ title: '插入图片', message: '输入图片地址', placeholder: 'https://… 或 /uploads/…' });
     if (url) editor.chain().focus().setImage({ src: url, alt: '' }).run();
   };
 
@@ -87,19 +120,19 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
       {sep()}
 
       <div className="tb-group">
-        {btn(<Heading1 size={15} />, () => editor.chain().focus().toggleHeading({ level: 1 }).run(), editor.isActive('heading', { level: 1 }), '标题 1')}
-        {btn(<Heading2 size={15} />, () => editor.chain().focus().toggleHeading({ level: 2 }).run(), editor.isActive('heading', { level: 2 }), '标题 2')}
-        {btn(<Heading3 size={15} />, () => editor.chain().focus().toggleHeading({ level: 3 }).run(), editor.isActive('heading', { level: 3 }), '标题 3')}
+        {btn(<Heading1 size={15} />, () => editor.chain().focus().toggleHeading({ level: 1 }).run(), s.h1, '标题 1')}
+        {btn(<Heading2 size={15} />, () => editor.chain().focus().toggleHeading({ level: 2 }).run(), s.h2, '标题 2')}
+        {btn(<Heading3 size={15} />, () => editor.chain().focus().toggleHeading({ level: 3 }).run(), s.h3, '标题 3')}
       </div>
 
       {sep()}
 
       <div className="tb-group">
-        {btn(<Bold size={15} />, () => editor.chain().focus().toggleBold().run(), editor.isActive('bold'), '加粗')}
-        {btn(<Italic size={15} />, () => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'), '斜体')}
-        {btn(<UnderlineIcon size={15} />, () => editor.chain().focus().toggleUnderline().run(), editor.isActive('underline'), '下划线')}
-        {btn(<Strikethrough size={15} />, () => editor.chain().focus().toggleStrike().run(), editor.isActive('strike'), '删除线')}
-        {btn(<Code size={15} />, () => editor.chain().focus().toggleCode().run(), editor.isActive('code'), '行内代码')}
+        {btn(<Bold size={15} />, () => editor.chain().focus().toggleBold().run(), s.bold, '加粗')}
+        {btn(<Italic size={15} />, () => editor.chain().focus().toggleItalic().run(), s.italic, '斜体')}
+        {btn(<UnderlineIcon size={15} />, () => editor.chain().focus().toggleUnderline().run(), s.underline, '下划线')}
+        {btn(<Strikethrough size={15} />, () => editor.chain().focus().toggleStrike().run(), s.strike, '删除线')}
+        {btn(<Code size={15} />, () => editor.chain().focus().toggleCode().run(), s.code, '行内代码')}
       </div>
 
       {sep()}
@@ -125,7 +158,7 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
 
       {/* Highlight dropdown */}
       <div className="tb-color-wrap" ref={hlRef}>
-        {btn(<Highlighter size={15} />, () => { setShowHighlights((v) => !v); setShowColors(false); }, editor.isActive('highlight'), '高亮')}
+        {btn(<Highlighter size={15} />, () => { setShowHighlights((v) => !v); setShowColors(false); }, s.highlight, '高亮')}
         {showHighlights && (
           <div className="tb-dropdown">
             {HIGHLIGHT_COLORS.map((c) => (
@@ -152,25 +185,25 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
       {sep()}
 
       <div className="tb-group">
-        {btn(<List size={15} />, () => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'), '无序列表')}
-        {btn(<ListOrdered size={15} />, () => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'), '有序列表')}
-        {btn(<ListChecks size={15} />, () => editor.chain().focus().toggleTaskList().run(), editor.isActive('taskList'), '任务列表')}
+        {btn(<List size={15} />, () => editor.chain().focus().toggleBulletList().run(), s.bulletList, '无序列表')}
+        {btn(<ListOrdered size={15} />, () => editor.chain().focus().toggleOrderedList().run(), s.orderedList, '有序列表')}
+        {btn(<ListChecks size={15} />, () => editor.chain().focus().toggleTaskList().run(), s.taskList, '任务列表')}
       </div>
 
       {sep()}
 
       <div className="tb-group">
-        {btn(<Quote size={15} />, () => editor.chain().focus().toggleBlockquote().run(), editor.isActive('blockquote'), '引用')}
-        {btn(<Code2 size={15} />, () => editor.chain().focus().toggleCodeBlock().run(), editor.isActive('codeBlock'), '代码块')}
+        {btn(<Quote size={15} />, () => editor.chain().focus().toggleBlockquote().run(), s.blockquote, '引用')}
+        {btn(<Code2 size={15} />, () => editor.chain().focus().toggleCodeBlock().run(), s.codeBlock, '代码块')}
         {btn(<Minus size={15} />, () => editor.chain().focus().setHorizontalRule().run(), false, '分割线')}
-        {btn(<Link2 size={15} />, setLink, editor.isActive('link'), '链接')}
+        {btn(<Link2 size={15} />, setLink, s.link, '链接')}
       </div>
 
       {sep()}
 
       <div className="tb-group">
         {btn(<ImageIcon size={15} />, insertImage, false, '插入图片')}
-        {btn(<TableIcon size={15} />, insertTable, editor.isActive('table'), '插入表格')}
+        {btn(<TableIcon size={15} />, insertTable, s.table, '插入表格')}
       </div>
     </div>
   );

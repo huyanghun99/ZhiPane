@@ -46,11 +46,20 @@
 .editor-content ul[data-type=taskList] { list-style: none; padding-left: 4px; }
 .editor-content ul[data-type=taskList] li { display: flex; gap: 8px; align-items: flex-start; }
 .editor-content ul[data-type=taskList] li > label { margin-top: 4px; }
-.editor-content table { border-collapse: collapse; width: 100%; margin: 8px 0; overflow: hidden; border-radius: 8px; }
+.editor-content table { border-collapse: collapse; width: 100%; margin: 8px 0; border-radius: 8px; }
 .editor-content table td, .editor-content table th { border: 1px solid var(--border-strong); padding: 8px 10px; vertical-align: top; position: relative; }
-.editor-content table th { background: var(--surface-2); font-weight: 600; text-align: left; }
+/* Pinned header: sticks to the editor scroll container (.center). The
+   .tableWrapper must NOT be a scroll container (no overflow) or the sticky
+   context would be clipped to it and never engage on page scroll. */
+.editor-content table th { background: var(--surface-2); font-weight: 600; text-align: left; position: sticky; top: 0; z-index: 2; box-shadow: inset 0 -1px 0 var(--border-strong); }
 .editor-content table .selectedCell { background: var(--primary-soft); }
 .editor-content table .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background: var(--primary); pointer-events: none; }
+
+/* Drag handles (row + column) — self-contained, zero external deps. */
+.th-handle { position: fixed; z-index: 60; display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 4px; color: var(--text-muted); cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+.th-handle:hover { color: var(--text); border-color: var(--primary); }
+.th-handle:active { cursor: grabbing; }
+.th-handle svg { display: block; }
 
 /* Selected block gets a soft primary wash (editor polish). */
 .editor-content .ProseMirror-selectednode { outline: 2px solid var(--primary); border-radius: 8px; background: var(--primary-soft); }
@@ -138,7 +147,10 @@ button.primary.sm { padding: 6px 9px; font-size: 12px; }
 .editor-content table { table-layout: fixed; }
 .editor-content table th { background: var(--surface-2); }
 .editor-content table td:hover, .editor-content table th:hover { background: var(--surface-2); }
-.editor-content .tableWrapper { overflow-x: auto; }
+/* Keep this visible (not a scroll container) so table-header sticky can
+   reach the real editor scroller (.center). Wide tables overflow into the
+   editor's own horizontal scroll instead. */
+.editor-content .tableWrapper { overflow: visible; max-width: 100%; }
 
 /* ------- Media blocks (video / audio / pdf / file) ------- */
 .media-block { border: 1px solid var(--border); border-radius: 12px; margin: 8px 0; background: var(--surface); overflow: hidden; }
@@ -220,7 +232,7 @@ button.primary.sm { padding: 6px 9px; font-size: 12px; }
 .excalidraw-act:hover { background: var(--surface-3); }
 .excalidraw-act.primary { background: var(--primary); color: #fff; }
 .excalidraw-act.primary:hover { filter: brightness(1.08); }
-.excalidraw-canvas { height: 480px; }
+.excalidraw-canvas { height: min(70vh, 640px); width: 100%; }
 .excalidraw-canvas .excalidraw { height: 100%; }
 .excalidraw-loading { height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
 .excalidraw-preview { padding: 8px; background: #fff; }

@@ -393,3 +393,11 @@ export function saveAiConfig(input: {
 }): Promise<{ ok: boolean }> {
   return put('/api/settings/ai-config', input);
 }
+
+export function getAppSettings(): Promise<{ hour: number }> {
+  return get('/api/settings/app');
+}
+
+export function saveAppSettings(hour: number): Promise<{ ok: boolean; hour: number }> {
+  return put('/api/settings/app', { hour });
+}

@@ -30,3 +30,9 @@ uploads/
 
 # Core dumps
 core.*
+
+# IDE / agent data (never commit)
+.codebuddy/
+
+# Generated source dump (RAG ingestion artifact, large)
+all-source-merged.txt

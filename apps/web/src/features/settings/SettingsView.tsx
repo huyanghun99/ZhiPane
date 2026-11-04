@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { KeyRound, LogOut, Save } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { post, getAiConfig, saveAiConfig } from '../../api';
+import { post, getAiConfig, saveAiConfig, getAppSettings, saveAppSettings } from '../../api';
 import type { User } from '../../types';
 
 const DRIVERS = [
@@ -44,6 +44,7 @@ export function SettingsView({ me, onLogout }: { me: User; onLogout: () => void 
   // touched: sending '' would CLEAR the stored key, which is not the intent
   // of a generic Save that only changed other fields.
   const [touched, setTouched] = useState(false);
+  const [organizeHour, setOrganizeHour] = useState(3);
 
   // Hydrate the form once the server config arrives.
   useEffect(() => {
@@ -74,6 +75,18 @@ export function SettingsView({ me, onLogout }: { me: User; onLogout: () => void 
       setTouched(false);
     }
   });
+
+  const { data: appSettings } = useQuery({
+    queryKey: ['app-settings'],
+    queryFn: getAppSettings
+  });
+  const saveOrganize = useMutation({
+    mutationFn: () => saveAppSettings(organizeHour),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['app-settings'] })
+  });
+  useEffect(() => {
+    if (typeof appSettings?.hour === 'number') setOrganizeHour(appSettings.hour);
+  }, [appSettings]);
 
   const logout = useMutation({
     mutationFn: () => post('/api/auth/logout', {}),
@@ -178,6 +191,33 @@ export function SettingsView({ me, onLogout }: { me: User; onLogout: () => void 
               <Save size={14} /> {save.isPending ? '保存中…' : '保存'}
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="home-card" style={{ marginTop: 16 }}>
+        <div className="home-card-head"><span>每日自动整理</span></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 0' }}>
+          <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+            系统在每天指定的时间，自动对当日有更新的全部笔记执行一次 AI 分析整理（嵌入、知识产物、Wiki 摘要等），无需手动触发。
+          </p>
+          <label style={fieldStyle}>
+            <span>执行时间</span>
+            <select style={inputStyle} value={organizeHour} onChange={(e) => setOrganizeHour(Number(e.target.value))}>
+              {[2, 3, 4, 5].map((h) => (
+                <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <button className="ghost sm" disabled={saveOrganize.isPending} onClick={() => saveOrganize.mutate()}>
+              <Save size={14} /> {saveOrganize.isPending ? '保存中…' : '保存'}
+            </button>
+          </div>
+          {saveOrganize.isSuccess && (
+            <div className="muted" style={{ color: '#2e7d32', fontSize: 12 }}>
+              已保存，将于每日 {String(organizeHour).padStart(2, '0')}:00 自动整理。
+            </div>
+          )}
         </div>
       </div>
 

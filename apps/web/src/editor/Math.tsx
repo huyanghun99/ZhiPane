@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Node, mergeAttributes, NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import katex from 'katex';
 import { Pencil } from 'lucide-react';
@@ -13,7 +13,7 @@ function renderLatex(latex: string, display: boolean): string {
   }
 }
 
-function MathBlockView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
+const MathBlockView = memo(function MathBlockView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
   const latex = (node.attrs.latex as string) || '';
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(latex);
@@ -39,7 +39,7 @@ function MathBlockView({ node, updateAttributes, selected, deleteNode }: NodeVie
       )}
     </BlockFrame>
   );
-}
+});
 
 export const MathBlock = createZhipaneBlock({
   name: 'mathBlock',
@@ -67,7 +67,7 @@ export const MathInline = Node.create({
   }
 });
 
-function MathInlineView({ node, updateAttributes, selected }: NodeViewProps) {
+const MathInlineView = memo(function MathInlineView({ node, updateAttributes, selected }: NodeViewProps) {
   const latex = (node.attrs.latex as string) || '';
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(latex);
@@ -84,4 +84,4 @@ function MathInlineView({ node, updateAttributes, selected }: NodeViewProps) {
       )}
     </NodeViewWrapper>
   );
-}
+});

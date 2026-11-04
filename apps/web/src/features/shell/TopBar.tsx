@@ -1,12 +1,13 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Check, ChevronDown, ChevronRight, Download, Loader2, MoreHorizontal,
+  ChevronDown, ChevronRight, Download, MoreHorizontal,
   Printer, Search, Settings, Share2, Trash2, Upload
 } from 'lucide-react';
 import { useEditorStatus } from './editorStatus';
 import { SaveIndicator } from './SaveIndicator';
 import { urls } from '../../nav';
+import type { ModuleKey } from './TopAppSwitcher';
 import type { MainRoute, Space, TreeNode, Workspace } from '../../types';
 
 const ROUTE_LABEL: Record<MainRoute, string> = {
@@ -33,12 +34,13 @@ function buildCrumbChain(tree: TreeNode[] | undefined, pageId: string | null): T
   return chain;
 }
 
-export function TopBar({ workspace, workspaces, space, spaces, route, pageId, pageTitle, onOpenPalette, onSwitchWorkspace, onSwitchSpace, tree }: {
+export function TopBar({ workspace, workspaces, space, spaces, route, pageId, pageTitle, module, onOpenPalette, onSwitchWorkspace, onSwitchSpace, tree }: {
   workspace: Workspace | null;
   workspaces: Workspace[];
   space: Space | null;
   spaces: Space[];
   route: MainRoute;
+  module?: ModuleKey;
   pageId: string | null;
   pageTitle?: string | null;
   onOpenPalette: () => void;
@@ -77,6 +79,14 @@ export function TopBar({ workspace, workspaces, space, spaces, route, pageId, pa
 
   const crumbTail = route === 'page' ? (pageTitle || status.pageTitle || '未命名笔记') : ROUTE_LABEL[route];
 
+  // Standalone modules (tasks / nav) sit at the same level as the knowledge
+  // base itself — their breadcrumb shows only the module name, never the
+  // workspace/space path (which belongs to the knowledge-base context).
+  // Polymorphic behaviour keyed on the active module rather than a boolean
+  // special-case: knowledge-base routes render the workspace/space crumb path,
+  // while tasks/nav are top-level modules that intentionally omit it.
+  const isStandaloneModule = module ? module !== 'kb' : (route === 'tasks' || route === 'nav');
+
   // Phase C2.2 (U8): ancestor chain for the current page, drawn from the tree.
   const crumbChain = useMemo(
     () => (route === 'page' && pageId ? buildCrumbChain(tree, pageId) : []),
@@ -86,29 +96,32 @@ export function TopBar({ workspace, workspaces, space, spaces, route, pageId, pa
   return (
     <header className="topbar">
       <div className="crumbs">
-        {/* Workspace — clickable + dropdown */}
-        <div className="crumb-dropdown" ref={wsDropRef}>
-          <button className="crumb-link" onClick={() => setWsDropdown((v) => !v)}>
-            {workspace?.name ?? '知识库'} <ChevronDown size={11} />
-          </button>
-          {wsDropdown && onSwitchWorkspace && (
-            <div className="crumb-pop">
-              {workspaces.map((ws) => (
-                <button key={ws.id} className={`crumb-pop-item${ws.id === workspace?.id ? ' active' : ''}`}
-                  onClick={() => { setWsDropdown(false); onSwitchWorkspace?.(ws.id); }}>
-                  {ws.name}
+        {/* Workspace — clickable + dropdown (hidden in standalone modules,
+            where the breadcrumb intentionally carries no knowledge-base path) */}
+        {!isStandaloneModule && (
+          <div className="crumb-dropdown" ref={wsDropRef}>
+            <button className="crumb-link" onClick={() => setWsDropdown((v) => !v)}>
+              {workspace?.name ?? '知识库'} <ChevronDown size={11} />
+            </button>
+            {wsDropdown && onSwitchWorkspace && (
+              <div className="crumb-pop">
+                {workspaces.map((ws) => (
+                  <button key={ws.id} className={`crumb-pop-item${ws.id === workspace?.id ? ' active' : ''}`}
+                    onClick={() => { setWsDropdown(false); onSwitchWorkspace?.(ws.id); }}>
+                    {ws.name}
+                  </button>
+                ))}
+                <div className="crumb-pop-sep" />
+                <button className="crumb-pop-item" onClick={() => { setWsDropdown(false); navigate(urls.settings()); }}>
+                  <Settings size={13} /> 知识库设置
                 </button>
-              ))}
-              <div className="crumb-pop-sep" />
-              <button className="crumb-pop-item" onClick={() => { setWsDropdown(false); navigate(urls.settings()); }}>
-                <Settings size={13} /> 知识库设置
-              </button>
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Space — clickable + dropdown */}
-        {space && (
+        {/* Space — clickable + dropdown (also knowledge-base context only) */}
+        {!isStandaloneModule && space && (
           <>
             <ChevronRight size={13} className="crumb-sep" />
             <div className="crumb-dropdown" ref={spDropRef}>
@@ -173,11 +186,6 @@ export function TopBar({ workspace, workspaces, space, spaces, route, pageId, pa
 
       <div className="topbar-actions">
         {status.hasPage && <SaveIndicator state={status.saveState} />}
-        {status.hasPage && status.onSave && (
-          <button className="primary sm" disabled={status.saveState === 'saved' || status.saveState === 'saving'} onClick={status.onSave}>
-            {status.saveState === 'saving' ? <Loader2 className="spin" size={14} /> : <Check size={14} />} 保存
-          </button>
-        )}
         {status.hasPage && status.onShare && (
           <button className="ghost sm" title="分享" onClick={status.onShare}><Share2 size={15} /> 分享</button>
         )}

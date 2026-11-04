@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { EditorContent, useEditor, type Editor, ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { CodeBlock } from './CodeBlock';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
@@ -31,6 +32,7 @@ import { Excalidraw } from './Excalidraw';
 import { MarkdownShortcuts } from './MarkdownShortcuts';
 import { BubbleMenu } from './BubbleMenu';
 import { EditorToolbar } from './EditorToolbar';
+import { TableHandles } from './TableHandles';
 import { ImageView } from './ImageView';
 import { BlockHandle } from './BlockHandle';
 import { useUploads, inferKind } from './useUploads';
@@ -44,7 +46,7 @@ type RichEditorProps = {
   workspaceId?: string;
   spaceId?: string;
   pageId?: string | null;
-  onChange?: (payload: { contentJson: PMNode; textContent: string }) => void;
+  onChange?: (payload: { contentJson: PMNode }) => void;
   onSave?: () => void;
 };
 
@@ -137,8 +139,11 @@ export function RichEditor({ content, editable = true, workspaceId, spaceId, pag
 
   const editor = useEditor({
     editable,
+    immediatelyRender: true,
+    shouldRerenderOnTransaction: false,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3] }, codeBlock: false }),
+      CodeBlock,
       Placeholder.configure({
         placeholder: '输入 “/” 唤起命令菜单，可插入标题、表格、流程图、图片等；支持 Markdown 快捷输入（#、>、-、1.、```）'
       }),
@@ -235,7 +240,7 @@ export function RichEditor({ content, editable = true, workspaceId, spaceId, pag
     onUpdate: ({ editor: ed }) => {
       const json = ed.getJSON() as PMNode;
       lastJsonRef.current = JSON.stringify(json);
-      onChange?.({ contentJson: json, textContent: extractText(json) });
+      onChange?.({ contentJson: json });
     }
   });
 
@@ -277,6 +282,7 @@ export function RichEditor({ content, editable = true, workspaceId, spaceId, pag
         } : undefined}
       />
       <BlockHandle editor={editor} />
+      <TableHandles editor={editor} />
 
       {aiReq && workspaceId && spaceId && (
         <AiPopover

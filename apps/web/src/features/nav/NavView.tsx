@@ -12,6 +12,24 @@ import {
 
 const DEFAULT_ENGINE: SearchEngine = { id: '', workspaceId: '', name: 'Bing', urlTemplate: 'https://cn.bing.com/search?q=%s', isDefault: true };
 
+/** Isolated clock — owns its own 1s tick so the whole nav tree doesn't
+ *  re-render every second just to refresh the time display. */
+function NavClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const clock = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+  return (
+    <header className="nav-header">
+      <div className="nav-clock">{clock}</div>
+      <div className="nav-date">{dateStr}</div>
+    </header>
+  );
+}
+
 export function NavView({ workspace }: { workspace: { id: string } }) {
   const qc = useQueryClient();
   const toast = useToast();
@@ -32,15 +50,8 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
 
   const [editMode, setEditMode] = useState(false);
   const [search, setSearch] = useState('');
-  const [now, setNow] = useState(new Date());
   const [engineModal, setEngineModal] = useState(false);
   const [engineDraft, setEngineDraft] = useState({ name: '', urlTemplate: '' });
-
-  // clock
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
 
   // mutations
   const invalidate = useCallback(() => qc.invalidateQueries({ queryKey: ['nav', workspaceId] }), [qc, workspaceId]);
@@ -174,15 +185,9 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
     } catch { toast.error('导入失败：文件格式错误'); }
   };
 
-  const clock = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-  const dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
-
   return (
     <div className="nav-view">
-      <header className="nav-header">
-        <div className="nav-clock">{clock}</div>
-        <div className="nav-date">{dateStr}</div>
-      </header>
+      <NavClock />
 
       <div className="nav-searchwrap">
         <Search size={20} className="nav-search-icon" />

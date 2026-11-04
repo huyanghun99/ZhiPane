@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { type NodeViewProps } from '@tiptap/react';
 import { Download } from 'lucide-react';
 import { BlockFrame } from './BlockFrame';
@@ -28,7 +29,7 @@ function MediaFrame({ kind, title: _title, src, onRemove, children }: {
   );
 }
 
-export function VideoView({ node, deleteNode }: NodeViewProps) {
+export const VideoView = memo(function VideoView({ node, deleteNode }: NodeViewProps) {
   const src = node.attrs.src as string;
   const fileName = (node.attrs.fileName as string) || '视频';
   return (
@@ -36,9 +37,9 @@ export function VideoView({ node, deleteNode }: NodeViewProps) {
       <video className="media-video" src={src} controls preload="metadata" />
     </MediaFrame>
   );
-}
+});
 
-export function AudioView({ node, deleteNode }: NodeViewProps) {
+export const AudioView = memo(function AudioView({ node, deleteNode }: NodeViewProps) {
   const src = node.attrs.src as string;
   const fileName = (node.attrs.fileName as string) || '音频';
   return (
@@ -46,9 +47,9 @@ export function AudioView({ node, deleteNode }: NodeViewProps) {
       <audio className="media-audio" src={src} controls preload="metadata" />
     </MediaFrame>
   );
-}
+});
 
-export function PdfView({ node, deleteNode }: NodeViewProps) {
+export const PdfView = memo(function PdfView({ node, deleteNode }: NodeViewProps) {
   const src = node.attrs.src as string;
   const fileName = (node.attrs.fileName as string) || 'PDF';
   const size = node.attrs.size as number | undefined;
@@ -60,9 +61,9 @@ export function PdfView({ node, deleteNode }: NodeViewProps) {
       </div>
     </MediaFrame>
   );
-}
+});
 
-export function FileCardView({ node, deleteNode }: NodeViewProps) {
+export const FileCardView = memo(function FileCardView({ node, deleteNode }: NodeViewProps) {
   const src = node.attrs.src as string;
   const fileName = (node.attrs.fileName as string) || '文件';
   const size = node.attrs.size as number | undefined;
@@ -77,4 +78,4 @@ export function FileCardView({ node, deleteNode }: NodeViewProps) {
       </div>
     </MediaFrame>
   );
-}
+});

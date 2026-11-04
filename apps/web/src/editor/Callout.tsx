@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { ReactNodeViewRenderer, NodeViewContent, type NodeViewProps } from '@tiptap/react';
 import { createZhipaneBlock } from './blockContract';
 import { BlockFrame } from './BlockFrame';
@@ -12,7 +12,7 @@ const COLORS = [
   { key: 'purple', label: '紫', bg: '#f4ecff', border: '#d9c2ff' }
 ];
 
-function CalloutView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
+const CalloutView = memo(function CalloutView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
   const emoji = (node.attrs.emoji as string) || '💡';
   const color = (node.attrs.color as string) || 'blue';
   const palette = COLORS.find((c) => c.key === color) ?? COLORS[0];
@@ -51,7 +51,7 @@ function CalloutView({ node, updateAttributes, selected, deleteNode }: NodeViewP
       </div>
     </BlockFrame>
   );
-}
+});
 
 export const Callout = createZhipaneBlock({
   name: 'callout',

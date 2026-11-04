@@ -6,13 +6,13 @@
  *   - Supports left/center/right alignment
  *   - Persists width + align as node attributes
  */
-import { useRef, useCallback } from 'react';
+import { memo, useRef, useCallback } from 'react';
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 type Align = 'left' | 'center' | 'right';
 
-export function ImageView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
+export const ImageView = memo(function ImageView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
   const { src, alt, width, align } = node.attrs as {
     src: string; alt?: string; width?: number | null; align?: Align;
   };
@@ -87,4 +87,4 @@ export function ImageView({ node, updateAttributes, selected, deleteNode }: Node
       </div>
     </NodeViewWrapper>
   );
-}
+});

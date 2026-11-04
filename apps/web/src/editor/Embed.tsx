@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import { ExternalLink, Pencil } from 'lucide-react';
 import { createZhipaneBlock } from './blockContract';
@@ -18,7 +18,7 @@ function providerOf(url: string): string {
   }
 }
 
-function EmbedView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
+const EmbedView = memo(function EmbedView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
   const url = (node.attrs.url as string) || '';
   const [editing, setEditing] = useState(!url);
   const [draft, setDraft] = useState(url);
@@ -60,7 +60,7 @@ function EmbedView({ node, updateAttributes, selected, deleteNode }: NodeViewPro
       )}
     </BlockFrame>
   );
-}
+});
 
 export const Embed = createZhipaneBlock({
   name: 'embed',

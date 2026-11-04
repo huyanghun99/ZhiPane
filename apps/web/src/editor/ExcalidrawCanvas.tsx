@@ -5,16 +5,22 @@ export default function ExcalidrawCanvas({
   initialElements,
   initialAppState,
   initialFiles,
-  onApiReady
+  onApiReady,
+  onChange,
+  theme
 }: {
   initialElements: any[];
   initialAppState: any;
   initialFiles: any;
   onApiReady: (api: any) => void;
+  onChange?: (elements: readonly any[], appState: any, files: any) => void;
+  theme?: 'light' | 'dark';
 }) {
   return (
     <Excalidraw
       excalidrawAPI={onApiReady}
+      onChange={onChange}
+      theme={theme}
       initialData={{
         elements: initialElements,
         appState: { ...initialAppState, isLoading: false },

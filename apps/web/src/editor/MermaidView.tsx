@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { type NodeViewProps } from '@tiptap/react';
 import { Pencil } from 'lucide-react';
 import { BlockFrame } from './BlockFrame';
@@ -21,7 +21,7 @@ function loadMermaid(): Promise<MermaidLib> {
 
 let idSeq = 0;
 
-export function MermaidView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
+export const MermaidView = memo(function MermaidView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
   const code = (node.attrs.code as string) || '';
   const [svg, setSvg] = useState('');
   const [error, setError] = useState('');
@@ -94,4 +94,4 @@ export function MermaidView({ node, updateAttributes, selected, deleteNode }: No
       )}
     </BlockFrame>
   );
-}
+});

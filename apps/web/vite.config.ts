@@ -45,6 +45,16 @@ export default defineConfig(() => {
         '/health': { target: 'http://127.0.0.1:39280', changeOrigin: true }
       }
     },
+    // `vite preview` (production build) does NOT inherit `server.proxy`, so we
+    // mirror it here. Without this the built web app can't reach the API.
+    preview: {
+      port: 4173,
+      host: '0.0.0.0',
+      proxy: {
+        '/api': { target: 'http://127.0.0.1:39280', changeOrigin: true },
+        '/health': { target: 'http://127.0.0.1:39280', changeOrigin: true }
+      }
+    },
     build: {
       // Phase J (S8): split stable vendor libs into separate chunks so app
       // code changes don't invalidate the cached vendor bundle, and the main

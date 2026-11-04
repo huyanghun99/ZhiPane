@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.1",
-    "@zhipane/shared": "workspace:*",
     "@tanstack/react-query": "^5.62.8",
     "@tiptap/core": "^2.27.2",
+    "@tiptap/extension-code-block": "2.27.2",
     "@tiptap/extension-color": "^2.27.2",
     "@tiptap/extension-highlight": "^2.27.2",
     "@tiptap/extension-image": "^2.27.2",
@@ -32,6 +32,7 @@
     "@tiptap/starter-kit": "^2.27.2",
     "@tiptap/suggestion": "^2.27.2",
     "@vitejs/plugin-react": "^4.3.4",
+    "@zhipane/shared": "workspace:*",
     "katex": "^0.16.11",
     "lucide-react": "^0.468.0",
     "mermaid": "^11",

@@ -1,8 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Archive, BookOpen, Brain, CheckSquare, ChevronDown, ChevronsLeft, Clock, Compass, Download, FileText, Home, LayoutGrid, LogOut,
-  Moon, Monitor, Pencil, Plus, Search, Settings, Sparkles, Star, Sun, Trash2, Wand2
+  Archive, BookOpen, Brain, ChevronDown, ChevronsLeft, Clock, Download, FileText, Home, LayoutGrid, Pencil, Plus, Search, Sparkles, Star, Trash2, Wand2
 } from 'lucide-react';
 import { api, del, patch, post, renamePage, movePage, copyPage } from '../../api';
 import { useToast } from '../../components/Toast';
@@ -13,8 +12,8 @@ import { useFavorites } from '../../hooks/useFavorites';
 import { useAdaptivePolling } from '../../hooks/useAdaptivePolling';
 import { PageTree } from '../notes/PageTree';
 import { useDeletePage } from '../notes/useDeletePage';
-import { cycleTheme, getTheme, type ThemeMode } from '../../theme';
-import type { MainRoute, PageDetail, Space, TreeNode, User, Workspace } from '../../types';
+
+import type { MainRoute, PageDetail, Space, TreeNode, Workspace } from '../../types';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: '待整理', processing: '整理中', done: '已整理', processed: '已整理',
@@ -34,11 +33,10 @@ function flatten(tree: TreeNode[]): TreeNode[] {
   return out;
 }
 
-export function LeftSidebar({
-  me, workspace, workspaces, space, spaces, route, selectedPageId,
-  onPickWorkspace, onPickSpace, onSelectPage, onNavigate, onNewNote, onLogout, onNavigateHome, onOpenSettings
+export function KnowledgeSidebar({
+  workspace, workspaces, space, spaces, route, selectedPageId,
+  onPickWorkspace, onPickSpace, onSelectPage, onNavigate, onNewNote
 }: {
-  me: User;
   workspace: Workspace | null;
   workspaces: Workspace[];
   space: Space | null;
@@ -50,16 +48,11 @@ export function LeftSidebar({
   onSelectPage: (id: string) => void;
   onNavigate: (r: MainRoute) => void;
   onNewNote: () => void;
-  onLogout: () => void;
-  onNavigateHome: () => void;
-  onOpenSettings: () => void;
 }) {
   const qc = useQueryClient();
   const toast = useToast();
   const dialog = useDialog();
   const { favorites } = useFavorites();
-  const [theme, setTheme] = useState<ThemeMode>(() => getTheme());
-  const onToggleTheme = () => setTheme(cycleTheme(theme));
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem('sb.collapsed') === '1'; } catch { return false; }
@@ -117,7 +110,7 @@ export function LeftSidebar({
   });
   const deleteWs = useMutation({
     mutationFn: () => del(`/api/workspaces/${workspace!.id}`),
-    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ['workspaces'] }); onNavigateHome(); toast.success('已删除知识库'); }
+    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ['workspaces'] }); onNavigate('home'); toast.success('已删除知识库'); }
   });
   const createSp = useMutation({
     mutationFn: () => post<{ space: Space }>('/api/spaces', { workspaceId: workspace!.id, name: spName || '新空间', aiPrivacyPolicy: 'inherit_workspace', spaceKind: spKind }),
@@ -134,7 +127,7 @@ export function LeftSidebar({
       const remaining = spaces.find((s) => s.id !== id);
       if (space?.id === id) {
         if (remaining) onPickSpace(remaining);
-        else onNavigateHome();
+        else onNavigate('home');
       }
       toast.success('已删除空间');
     }
@@ -259,8 +252,6 @@ export function LeftSidebar({
 
   const NAV: { key: MainRoute; label: string; icon: React.ReactNode; badge?: number }[] = [
     { key: 'home', label: '首页', icon: <Home size={16} /> },
-    { key: 'tasks', label: '任务管理', icon: <CheckSquare size={16} /> },
-    { key: 'nav', label: '常用导航', icon: <Compass size={16} /> },
     { key: 'organize', label: '智能整理', icon: <Wand2 size={16} />, badge: inboxCount },
     { key: 'search', label: '搜索', icon: <Search size={16} /> },
     { key: 'ask', label: '知识问答', icon: <Brain size={16} /> },
@@ -407,15 +398,6 @@ export function LeftSidebar({
             )}
           </div>
         )}
-      </div>
-
-      <div className="sb-foot">
-        <span className="sb-user">{me.name}{me.isInstanceOwner && <span className="tag">Owner</span>}</span>
-        <button className="icon-btn" title={theme === 'dark' ? '深色模式' : theme === 'light' ? '浅色模式' : '跟随系统'} onClick={onToggleTheme}>
-          {theme === 'dark' ? <Moon size={15} /> : theme === 'light' ? <Sun size={15} /> : <Monitor size={15} />}
-        </button>
-        <button className="icon-btn" title="设置" onClick={onOpenSettings}><Settings size={15} /></button>
-        <button className="icon-btn" title="退出登录" onClick={onLogout}><LogOut size={15} /></button>
       </div>
 
       {menu && (

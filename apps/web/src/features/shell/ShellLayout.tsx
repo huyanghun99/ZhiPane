@@ -5,6 +5,7 @@ import { BookOpen, PanelRight } from 'lucide-react';
 import { api, post } from '../../api';
 import { urls, routeToUrl } from '../../nav';
 import { extractText } from '../../editor/prosemirror';
+import { getTheme, cycleTheme, type ThemeMode } from '../../theme';
 import { CommandPalette } from '../../components/CommandPalette';
 import { ShortcutsHelp } from '../../components/ShortcutsHelp';
 import { Onboarding } from '../../components/Onboarding';
@@ -14,8 +15,10 @@ import { NewPageDialog } from '../../components/NewPageDialog';
 import { useToast } from '../../components/Toast';
 import { useAiCompletionNotify } from '../../hooks/useAiCompletionNotify';
 import { getTemplate } from '../../editor/templates';
-import { LeftSidebar } from './LeftSidebar';
 import { TopBar } from './TopBar';
+import { KnowledgeSidebar } from './KnowledgeSidebar';
+import { TopAppSwitcher, type ModuleKey } from './TopAppSwitcher';
+import { NavSidebar } from './NavSidebar';
 import { RightPanel } from './RightPanel';
 import { useShellContext, loadLastSpace } from './useShellContext';
 import { HomeView } from '../home/HomeView';
@@ -89,6 +92,9 @@ export function ShellLayout({ me }: { me: User }) {
       navigate(urls.home());
     }
   });
+
+  const [theme, setTheme] = useState<ThemeMode>(() => getTheme());
+  const onToggleTheme = useCallback(() => setTheme((t) => cycleTheme(t)), []);
 
   // Phase 6: create a page from a template (or blank). The template only
   // pre-fills contentJson — no new backend endpoint.
@@ -310,35 +316,53 @@ export function ShellLayout({ me }: { me: User }) {
     );
   };
 
+  const showRight = pageMatch && !!workspace && !!space;
+
+  const moduleKey: ModuleKey =
+    activeRoute === 'tasks' ? 'tasks' : activeRoute === 'nav' ? 'nav' : 'kb';
+  const switchModule = useCallback((m: ModuleKey) => {
+    if (m === 'kb') onNavigateHome();
+    else onNavigate(m);
+  }, [onNavigateHome, onNavigate]);
+
   // Redirect `/` to the resolved space (handled above); render nothing meanwhile.
+  // IMPORTANT: this early return MUST come after every hook call above. Placing
+  // it before `switchModule` made the `/` render call fewer hooks than the
+  // non-root renders, which throws "Rendered fewer hooks than expected".
   if (isRoot && (validLast || workspaces[0])) {
     // The effect navigates away; avoid a flash of the landing state.
     if (validLast) return null;
     if (workspaces[0] && defaultSpaces?.spaces?.length) return null;
   }
 
-  const showRight = pageMatch && !!workspace && !!space;
-
   return (
     <div className="app-shell-3">
-      <LeftSidebar
+      <TopAppSwitcher
+        module={moduleKey}
+        onSwitch={switchModule}
         me={meUser}
-        workspace={workspace}
-        workspaces={workspaces}
-        space={space}
-        spaces={spaces}
-        route={activeRoute}
-        selectedPageId={pageId}
-        onPickWorkspace={onPickWorkspace}
-        onPickSpace={onPickSpace}
-        onSelectPage={onSelectPage}
-        onNavigate={onNavigate}
-        onNewNote={onNewNote}
-        onLogout={onLogout}
-        onNavigateHome={onNavigateHome}
         onOpenSettings={() => navigate(urls.settings())}
+        onLogout={onLogout}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
-
+      <div className={`shell-body${moduleKey !== 'kb' ? ' no-sidebar' : ''}`}>
+        {moduleKey === 'kb' && (
+          <KnowledgeSidebar
+            workspace={workspace}
+            workspaces={workspaces}
+            space={space}
+            spaces={spaces}
+            route={activeRoute}
+            selectedPageId={pageId}
+            onPickWorkspace={onPickWorkspace}
+            onPickSpace={onPickSpace}
+            onSelectPage={onSelectPage}
+            onNavigate={onNavigate}
+            onNewNote={onNewNote}
+          />
+        )}
+        {moduleKey === 'nav' && <NavSidebar />}
       <div className="main-col">
         <TopBar
           workspace={workspace}
@@ -346,6 +370,7 @@ export function ShellLayout({ me }: { me: User }) {
           space={space}
           spaces={spaces ?? []}
           route={activeRoute}
+          module={moduleKey}
           pageId={pageId}
           pageTitle={ctx.pageTitle}
           tree={treeData?.tree ?? []}
@@ -378,6 +403,7 @@ export function ShellLayout({ me }: { me: User }) {
             </>
           )}
         </div>
+      </div>
       </div>
 
       <CommandPalette

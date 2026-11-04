@@ -22,9 +22,16 @@
   --border: #e4e4e7;      /* neutral-200 */
   --border-strong: #d4d4d8;/* neutral-300 */
   --danger: #dc2626;
+  --danger-hover: #b91c1c; /* darker red for hover on solid danger buttons */
   --success: #16a34a;
   --ok: var(--success);
   --warn: #d97706;
+  --info: #3b82f6;         /* neutral informational accent (e.g. low priority) */
+
+  /* ------- Accents that are intentionally theme-independent ------- */
+  --star: #f5b301;         /* favorite star — reads well on light & dark */
+  --graph-topic: #b07cff;  /* knowledge-graph topic nodes */
+  --mark-bg: #fde68a;      /* search-result <mark> highlight */
 
   /* ------- Spacing (4px steps) ------- */
   --space-1: 4px;

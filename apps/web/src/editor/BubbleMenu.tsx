@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { type Editor } from '@tiptap/react';
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough, Code, Highlighter,
-  Link as LinkIcon, Check, Sparkles, ChevronDown
+  Link as LinkIcon, Check, Sparkles, ChevronDown, Type
 } from 'lucide-react';
 import { AI_ACTIONS, BUBBLE_AI_ACTIONS, type AiActionKind } from './ai-actions';
 
@@ -41,6 +41,7 @@ export function BubbleMenu({
   const [aiOpen, setAiOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [active, setActive] = useState({ bold: false, italic: false, underline: false, strike: false, code: false, highlight: false, link: false });
+  const [turnOpen, setTurnOpen] = useState(false);
 
   const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
 
@@ -83,10 +84,8 @@ export function BubbleMenu({
 
   useEffect(() => {
     editor.on('selectionUpdate', update);
-    editor.on('transaction', update);
     return () => {
       editor.off('selectionUpdate', update);
-      editor.off('transaction', update);
       clearTimer();
     };
   }, [editor, update]);
@@ -110,6 +109,21 @@ export function BubbleMenu({
     return () => dom.removeEventListener('zhipane:edit-link', handler);
   }, [editor, openLink]);
 
+  // Viewport collision detection: once the menu is shown, keep it fully inside
+  // the viewport so it never overflows off-screen on selections near edges.
+  useEffect(() => {
+    if (!show || !ref.current) return;
+    const el = ref.current;
+    const rect = el.getBoundingClientRect();
+    const pad = 8;
+    let { top, left } = pos;
+    if (rect.right > window.innerWidth - pad) left = Math.max(pad, window.innerWidth - rect.width - pad);
+    if (rect.left < pad) left = pad;
+    if (rect.bottom > window.innerHeight - pad) top = Math.max(pad, window.innerHeight - rect.height - pad);
+    if (rect.top < pad) top = pad;
+    if (left !== pos.left || top !== pos.top) setPos({ left, top });
+  }, [show, pos]);
+
   if (!show) return null;
 
   const stop = (e: React.MouseEvent) => e.preventDefault();
@@ -130,8 +144,36 @@ export function BubbleMenu({
     if (text && onAi) onAi(kind, text, pos);
   };
 
+  // "Turn into": convert the block that contains the current selection into
+  // another type (heading / paragraph / list / quote / code).
+  const turnInto = (kind: 'h1' | 'h2' | 'h3' | 'p' | 'ul' | 'ol' | 'quote' | 'code') => {
+    const { from } = editor.state.selection;
+    editor.chain().focus().setTextSelection(from).run();
+    switch (kind) {
+      case 'h1': editor.chain().focus().toggleHeading({ level: 1 }).run(); break;
+      case 'h2': editor.chain().focus().toggleHeading({ level: 2 }).run(); break;
+      case 'h3': editor.chain().focus().toggleHeading({ level: 3 }).run(); break;
+      case 'p': editor.chain().focus().setParagraph().run(); break;
+      case 'ul': editor.chain().focus().toggleBulletList().run(); break;
+      case 'ol': editor.chain().focus().toggleOrderedList().run(); break;
+      case 'quote': editor.chain().focus().toggleBlockquote().run(); break;
+      case 'code': editor.chain().focus().toggleCodeBlock().run(); break;
+    }
+    setTurnOpen(false);
+    setShow(false);
+  };
+
   return (
     <div ref={ref} className="bubble-menu" style={{ display: 'flex', top: pos.top, left: pos.left }}>
+      <button type="button" className={`bub-btn${turnOpen ? ' active' : ''}`} title="转换为" onMouseDown={stop} onClick={() => { setTurnOpen((o) => !o); setAiOpen(false); setLinkOpen(false); }}><Type size={15} /></button>
+      {turnOpen && (
+        <div className="bub-turn-menu" onMouseDown={(e) => e.preventDefault()}>
+          {([['h1', '标题 1'], ['h2', '标题 2'], ['h3', '标题 3'], ['p', '正文'], ['ul', '无序列表'], ['ol', '有序列表'], ['quote', '引用'], ['code', '代码块']] as const).map(([k, label]) => (
+            <button key={k} type="button" className="bub-ai-item" onClick={() => turnInto(k)}>{label}</button>
+          ))}
+        </div>
+      )}
+
       <button type="button" className={`bub-btn${active.bold ? ' active' : ''}`} title="加粗" onMouseDown={stop} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={15} /></button>
       <button type="button" className={`bub-btn${active.italic ? ' active' : ''}`} title="斜体" onMouseDown={stop} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={15} /></button>
       <button type="button" className={`bub-btn${active.underline ? ' active' : ''}`} title="下划线" onMouseDown={stop} onClick={() => editor.chain().focus().toggleUnderline().run()}><UnderlineIcon size={15} /></button>
