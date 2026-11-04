@@ -349,12 +349,12 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 
 /* ------- Top bar (crumbs + palette + status + more) ------- */
 .main-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; overflow: hidden; }
-.crumbs { display: flex; align-items: center; gap: 6px; font-size: 13px; min-width: 0; overflow: hidden; }
-.crumb-link { border: 0; background: transparent; color: var(--text-2); padding: 4px 6px; border-radius: 7px; font-weight: 600; font-size: 13px; }
-.crumb-link:hover { background: var(--surface-2); }
-.crumb-sep { color: var(--muted); flex-shrink: 0; }
+.crumbs { display: flex; align-items: center; gap: 2px; font-size: var(--text-sm); min-width: 0; overflow: hidden; }
+.crumb-link { border: 0; background: transparent; color: var(--muted); padding: 4px 6px; border-radius: 7px; font-weight: 400; font-size: var(--text-sm); cursor: pointer; }
+.crumb-link:hover { background: var(--surface-2); color: var(--text-2); }
+.crumb-sep { color: color-mix(in srgb, var(--muted) 60%, transparent); font-size: 12px; flex-shrink: 0; }
 .crumb-mid { color: var(--text-2); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.crumb-current { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crumb-current { color: var(--text); font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .palette-trigger { flex: 1; max-width: 480px; justify-content: flex-start; gap: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); padding: 8px 12px; border-radius: 10px; font-size: 13px; }
 .palette-trigger:hover { background: var(--surface-3); }
