@@ -11,7 +11,7 @@ import type { ModuleKey } from './TopAppSwitcher';
 import type { MainRoute, Space, TreeNode, Workspace } from '../../types';
 
 const ROUTE_LABEL: Record<MainRoute, string> = {
-  home: '首页', page: '', organize: '智能整理', search: '搜索', ask: '知识问答', map: '关系图', archive: '归档中心', tasks: '任务管理', nav: '常用导航'
+  home: '首页', page: '', organize: '智能整理', search: '搜索', ask: '知识问答', map: '关系图', archive: '归档中心', settings: '设置', tasks: '任务管理', nav: '常用导航'
 };
 
 // Phase C2.2 (U8): build the ancestor chain for a page from the full tree so the

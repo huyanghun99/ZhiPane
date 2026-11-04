@@ -39,8 +39,9 @@ export function routeToUrl(
   workspaceId: string | undefined,
   spaceId: string | undefined
 ): string {
-  // Archive Center is a fixed, space-independent destination.
+  // Archive Center and Settings are fixed, space-independent destinations.
   if (route === 'archive') return urls.archive();
+  if (route === 'settings') return urls.settings();
   if (route === 'tasks') return urls.tasks();
   if (route === 'nav') return urls.nav();
   if (!workspaceId || !spaceId) return urls.home();

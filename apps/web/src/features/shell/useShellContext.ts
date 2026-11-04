@@ -39,7 +39,7 @@ export function parsePath(pathname: string, search: string): Parsed {
     const sp = new URLSearchParams(search).get('spaceId') ?? undefined;
     return { spaceId: sp };
   }
-  if (pathname === '/tasks') return {};
+  if (pathname === '/tasks' || pathname === '/archive' || pathname === '/settings') return {};
   return {};
 }
 
@@ -50,6 +50,7 @@ export function activeRouteFromPath(pathname: string): MainRoute {
   if (/^\/map\//.test(pathname)) return 'map';
   if (pathname === '/search') return 'search';
   if (pathname === '/archive') return 'archive';
+  if (pathname === '/settings') return 'settings';
   if (pathname === '/tasks') return 'tasks';
   if (pathname === '/nav') return 'nav';
   if (/^\/p\//.test(pathname)) return 'page';
@@ -104,9 +105,11 @@ export function useShellContext(me: User) {
     }
   });
 
-  // /tasks is a workspace-scoped route but carries no ids in the URL; default
-  // to the first available workspace so the workbench can render immediately.
-  const defaultWorkspaceId = location.pathname === '/tasks' && !parsed.workspaceId
+  // /tasks, /archive and /settings are workspace-scoped routes that carry no
+  // ids in the URL; default to the first available workspace so their views can
+  // resolve their scope and fire their data queries.
+  const isCtxlessRoute = location.pathname === '/archive' || location.pathname === '/settings';
+  const defaultWorkspaceId = (location.pathname === '/tasks' || isCtxlessRoute) && !parsed.workspaceId
     ? workspaces[0]?.id
     : undefined;
 
@@ -120,12 +123,17 @@ export function useShellContext(me: User) {
   });
   const spaces = spData?.spaces ?? [];
 
+  // For context-less routes (archive/settings) that carry no space in the URL,
+  // fall back to the first space of the resolved workspace so space-scoped data
+  // (e.g. Archive Center suggestions/topics) can load.
+  const effectiveSpaceId = spaceId ?? (isCtxlessRoute ? spaces[0]?.id : undefined);
   const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
-  const space = spaces.find((s) => s.id === spaceId) ?? null;
+  const space = spaces.find((s) => s.id === effectiveSpaceId) ?? null;
 
   useEffect(() => {
+    if (isCtxlessRoute) return;
     if (workspace?.id && space?.id) saveLastSpace({ workspaceId: workspace.id, spaceId: space.id });
-  }, [workspace?.id, space?.id]);
+  }, [isCtxlessRoute, workspace?.id, space?.id]);
 
   const activeRoute = activeRouteFromPath(location.pathname);
 

@@ -44,7 +44,7 @@ export type TreeNode = PageNode & { children: TreeNode[] };
 // Primary destinations rendered in the center column. The three-column shell
 // (left sidebar + top bar + right panel) stays mounted across all of them, so
 // notes / organize / search never feel like separate apps.
-export type MainRoute = 'home' | 'page' | 'organize' | 'search' | 'ask' | 'map' | 'archive' | 'tasks' | 'nav';
+export type MainRoute = 'home' | 'page' | 'organize' | 'search' | 'ask' | 'map' | 'archive' | 'tasks' | 'nav' | 'settings';
 
 export type RagSession = {
   id: string;
