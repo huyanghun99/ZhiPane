@@ -16,10 +16,10 @@
   --text: #f8fafc;          /* slate-50 */
   --text-2: #cbd5e1;        /* slate-300 */
   --muted: #64748b;         /* slate-500 */
-  --primary: #22c55e;       /* brand-500 */
-  --primary-hover: #4ade80; /* brand-400 */
-  --primary-soft: #064E3B;  /* green-900 soft wash */
-  --primary-strong: #86efac; /* brand-300 glow */
+  --primary: #6366f1;                         /* indigo-500 — site brand in dark */
+  --primary-hover: #818cf8;                   /* indigo-400 */
+  --primary-soft: color-mix(in srgb, #6366f1 22%, transparent);
+  --primary-strong: #a5b4fc;                 /* indigo-300 */
   --brand-500: #22c55e;
   --brand-400: #4ade80;
   --brand-300: #86efac;
@@ -51,10 +51,10 @@
     --text: #f8fafc;
     --text-2: #cbd5e1;
     --muted: #64748b;
-    --primary: #22c55e;
-    --primary-hover: #4ade80;
-    --primary-soft: #064E3B;
-    --primary-strong: #86efac;
+    --primary: #6366f1;
+    --primary-hover: #818cf8;
+    --primary-soft: color-mix(in srgb, #6366f1 22%, transparent);
+    --primary-strong: #a5b4fc;
     --border: #1e293b;
     --border-strong: #22c55e;
     --danger: #f87171;

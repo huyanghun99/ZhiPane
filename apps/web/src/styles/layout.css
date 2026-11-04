@@ -298,7 +298,7 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 .sb-brand { position: relative; display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px; border-bottom: 1px solid var(--border); }
 .sb-brand-mark { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--primary); color: #fff; flex-shrink: 0; }
 .sb-ws { flex: 1; min-width: 0; position: relative; }
-.sb-ws-trigger { width: 100%; justify-content: flex-start; border: 0; background: transparent; padding: 6px 8px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--text); gap: 6px; }
+.sb-ws-trigger { width: 100%; justify-content: flex-start; border: 0; background: transparent; padding: 6px 8px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--text); gap: 6px; box-shadow: inset 3px 0 0 var(--brand-500); }
 .sb-ws-trigger:hover { background: var(--surface-2); }
 .sb-ws-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 .sb-backdrop { position: fixed; inset: 0; z-index: 30; }
