@@ -17,7 +17,7 @@ import { useAiCompletionNotify } from '../../hooks/useAiCompletionNotify';
 import { getTemplate } from '../../editor/templates';
 import { TopBar } from './TopBar';
 import { KnowledgeSidebar } from './KnowledgeSidebar';
-import type { ModuleKey } from './TopAppSwitcher';
+import type { ModuleKey } from '../../types';
 import { NavSidebar } from './NavSidebar';
 import { RightPanel } from './RightPanel';
 import { useShellContext, loadLastSpace } from './useShellContext';

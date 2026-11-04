@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Archive, BookOpen, Brain, ChevronDown, ChevronsLeft, Clock, Download, FileText, Home, LayoutGrid, Pencil, Plus, Search, Settings, Sparkles, Star, Trash2, Wand2
+  Archive, BookOpen, Brain, ChevronDown, ChevronsLeft, Clock, Download, FileText, Home, LayoutGrid, Pencil, Plus, Settings, Sparkles, Star, Trash2, Wand2
 } from 'lucide-react';
 import { api, del, patch, post, renamePage, movePage, copyPage } from '../../api';
 import { useToast } from '../../components/Toast';
@@ -250,12 +250,11 @@ export function KnowledgeSidebar({
       .finally(() => setMoveTarget(null));
   }, [moveTarget, space, movePage, qc, toast]);
 
-  const NAV: { key: MainRoute; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { key: 'home', label: '首页', icon: <Home size={16} /> },
-    { key: 'organize', label: '智能整理', icon: <Wand2 size={16} />, badge: inboxCount },
-    { key: 'search', label: '搜索', icon: <Search size={16} /> },
-    { key: 'ask', label: '知识问答', icon: <Brain size={16} /> },
-    { key: 'map', label: '关系图', icon: <LayoutGrid size={16} /> }
+  const HOME_NAV = { key: 'home' as MainRoute, label: '首页', icon: <Home size={16} /> };
+  const TOOL_NAV = [
+    { key: 'organize' as MainRoute, label: '智能整理', icon: <Wand2 size={16} />, badge: inboxCount },
+    { key: 'ask' as MainRoute, label: '知识问答', icon: <Brain size={16} /> },
+    { key: 'map' as MainRoute, label: '关系图', icon: <LayoutGrid size={16} /> }
   ];
 
   return (
@@ -301,12 +300,18 @@ export function KnowledgeSidebar({
       <div className="sb-scroll">
         {/* Primary navigation */}
         <nav className="sb-nav">
-          {NAV.map((n) => (
-            <button key={n.key} className={`sb-nav-item${route === n.key ? ' active' : ''}`} onClick={() => onNavigate(n.key)}>
-              {n.icon}<span>{n.label}</span>
-              {n.badge ? <span className="sb-badge">{n.badge}</span> : null}
-            </button>
-          ))}
+          <button key={HOME_NAV.key} className={`sb-nav-item${route === HOME_NAV.key ? ' active' : ''}`} onClick={() => onNavigate(HOME_NAV.key)}>
+            {HOME_NAV.icon}<span>{HOME_NAV.label}</span>
+          </button>
+          <div className="sb-nav-group">
+            <div className="sb-nav-group-label">工具</div>
+            {TOOL_NAV.map((n) => (
+              <button key={n.key} className={`sb-nav-item${route === n.key ? ' active' : ''}`} onClick={() => onNavigate(n.key)}>
+                {n.icon}<span>{n.label}</span>
+                {n.badge ? <span className="sb-badge">{n.badge}</span> : null}
+              </button>
+            ))}
+          </div>
         </nav>
 
         {/* Recent */}

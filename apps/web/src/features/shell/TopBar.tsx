@@ -7,7 +7,7 @@ import {
 import { useEditorStatus } from './editorStatus';
 import { SaveIndicator } from './SaveIndicator';
 import { urls } from '../../nav';
-import type { ModuleKey } from './TopAppSwitcher';
+import type { ModuleKey } from '../../types';
 import type { MainRoute, Space, TreeNode, User, Workspace } from '../../types';
 import type { ThemeMode } from '../../theme';
 
@@ -107,7 +107,7 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
     const showAll = parts.length <= 3;
     const visible: Array<Part | '…'> = showAll
       ? parts
-      : [parts[0], '…', parts[parts.length - 2], parts[parts.length - 1]];
+      : ['…', parts[parts.length - 2], parts[parts.length - 1]];
     return (
       <>
         {visible.map((p, i) => {
@@ -120,7 +120,7 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
                   <button className="crumb-link" onClick={() => setMidOpen((v) => !v)}>…</button>
                   {midOpen && (
                     <div className="crumb-pop">
-                      {parts.slice(1, parts.length - 2).map((m) => (
+                      {parts.slice(0, parts.length - 2).map((m) => (
                         <button key={m.id} className="crumb-pop-item" onClick={() => { setMidOpen(false); m.onClick(); }}>
                           {m.label}
                         </button>

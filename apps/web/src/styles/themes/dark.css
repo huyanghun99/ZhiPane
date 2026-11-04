@@ -24,7 +24,7 @@
   --brand-400: #4ade80;
   --brand-300: #86efac;
   --border: #1e293b;        /* slate-800 */
-  --border-strong: #22c55e; /* green accent border */
+  --border-strong: #334155; /* slate-700 */
   --danger: #f87171;
   --danger-hover: #dc2626;
   --success: #4ade80;
@@ -56,7 +56,7 @@
     --primary-soft: color-mix(in srgb, #6366f1 22%, transparent);
     --primary-strong: #a5b4fc;
     --border: #1e293b;
-    --border-strong: #22c55e;
+    --border-strong: #334155;
     --danger: #f87171;
     --danger-hover: #dc2626;
     --success: #4ade80;
@@ -85,9 +85,9 @@
   background: radial-gradient(1200px 600px at 50% -10%, var(--primary-soft), var(--bg));
 }
 
-/* Scrollbar tint for dark surfaces. */
+/* Scrollbar tint for dark surfaces — neutral slate, not brand green. */
 :root[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: var(--surface-3);
 }
 :root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
   background: var(--muted);

@@ -23,11 +23,11 @@ h1, h2, h3, h4 { margin: 0; }
 .error { color: var(--danger); font-size: var(--text-sm); margin: 6px 0 0; }
 
 /* ------- Scrollbar ------- */
-* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: var(--surface-3);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: content-box;

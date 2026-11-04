@@ -46,6 +46,9 @@ export type TreeNode = PageNode & { children: TreeNode[] };
 // notes / organize / search never feel like separate apps.
 export type MainRoute = 'home' | 'page' | 'organize' | 'search' | 'ask' | 'map' | 'archive' | 'tasks' | 'nav' | 'settings';
 
+/** Top-level module switch key (knowledge / tasks / nav). */
+export type ModuleKey = 'kb' | 'tasks' | 'nav';
+
 export type RagSession = {
   id: string;
   query: string;
