@@ -57,6 +57,9 @@ export function routeToUrl(
     case 'search':
       return urls.search(undefined, spaceId);
     case 'page':
-      return urls.page(spaceId);
+      // `routeToUrl` only knows workspace/space, not which page — callers that
+      // need a specific page should use `urls.page(id)` directly. Fall back to
+      // the space home rather than building a bogus `/p/<spaceId>` URL.
+      return urls.spaceHome(workspaceId, spaceId);
   }
 }

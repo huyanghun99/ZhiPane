@@ -33,6 +33,11 @@ import { TasksView } from '../tasks/TasksView';
 import { NavView } from '../nav/NavView';
 import type { MainRoute, PageDetail, Space, TreeNode, User, Workspace } from '../../types';
 
+const MODULE_POSITIONS_KEY = 'zp.modulePositions';
+function loadModulePositions(): Record<string, string> {
+  try { return JSON.parse(sessionStorage.getItem(MODULE_POSITIONS_KEY) || '{}'); } catch { return {}; }
+}
+
 export function ShellLayout({ me }: { me: User }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -203,6 +208,10 @@ export function ShellLayout({ me }: { me: User }) {
     (r: MainRoute) => navigate(routeToUrl(r, workspace?.id, space?.id)),
     [navigate, workspace, space]
   );
+
+  // P2-2: remember the last position (URL) per module — the state is declared
+  // here; the recording effect + wrapped navigator are defined after `moduleKey`.
+  const [modulePositions, setModulePositions] = useState<Record<string, string>>(() => loadModulePositions());
   const onNewNote = useCallback(() => { if (space) setNewPageOpen(true); }, [space]);
   const onRunSearch = useCallback((q: string) => navigate(urls.search(q, space?.id)), [navigate, space]);
   const onPickWorkspace = useCallback(
@@ -317,6 +326,30 @@ export function ShellLayout({ me }: { me: User }) {
   const moduleKey: ModuleKey =
     activeRoute === 'tasks' ? 'tasks' : activeRoute === 'nav' ? 'nav' : 'kb';
 
+  // P2-2: remember the last position (URL) per module so switching back restores
+  // where the user left off instead of "restarting" at the module root.
+  useEffect(() => {
+    const url = location.pathname + location.search;
+    setModulePositions((prev) => {
+      if (prev[moduleKey] === url) return prev;
+      const next = { ...prev, [moduleKey]: url };
+      try { sessionStorage.setItem(MODULE_POSITIONS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, [moduleKey, location.pathname, location.search]);
+
+  const MODULE_ROOT_TO_KEY: Partial<Record<MainRoute, ModuleKey>> = { home: 'kb', tasks: 'tasks', nav: 'nav' };
+  const onNavigateWrapped = useCallback((r: MainRoute) => {
+    const mod = MODULE_ROOT_TO_KEY[r];
+    if (mod) {
+      const saved = modulePositions[mod];
+      const cur = location.pathname + location.search;
+      if (saved && saved === cur) return;
+      if (saved) { navigate(saved); return; }
+    }
+    onNavigate(r);
+  }, [onNavigate, navigate, modulePositions, location.pathname, location.search]);
+
 
   // Redirect `/` to the resolved space (handled above); render nothing meanwhile.
   // IMPORTANT: this early return MUST come after every hook call above. Placing
@@ -374,7 +407,11 @@ export function ShellLayout({ me }: { me: User }) {
           pageTitle={ctx.pageTitle}
           tree={treeData?.tree ?? []}
           onOpenPalette={() => setPaletteOpen(true)}
-          onNavigate={onNavigate}
+          onNavigate={onNavigateWrapped}
+          me={meUser}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
+          onLogout={onLogout}
         />
 
         <div className="center-and-right">
