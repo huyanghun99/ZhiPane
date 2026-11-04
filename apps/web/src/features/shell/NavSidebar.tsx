@@ -1,27 +1,65 @@
-import type { MainRoute, Space, Workspace } from '../../types';
-import { KnowledgeSidebar } from './KnowledgeSidebar';
+import { useQuery } from '@tanstack/react-query';
+import { Compass, Plus, Pencil, Search } from 'lucide-react';
+import type { Workspace } from '../../types';
+import { listNav, type NavGroup } from '../nav/api';
+import { getSearchEngines } from '../nav/api';
 
-/**
- * NavSidebar — the "常用导航" module's left rail.
- *
- * Originally a no-op placeholder that left the NavView (bookmark dashboard) as a
- * full-width "neon island". It now reuses the same real knowledge-base rail so
- * the navigation module is a genuine navigation container: users can browse
- * workspaces / spaces / pages from the left and reach the bookmark dashboard in
- * the content area, consistent with the knowledge-base module.
- */
-export function NavSidebar(props: {
-  workspace: Workspace | null;
-  workspaces: Workspace[];
-  space: Space | null;
-  spaces: Space[];
-  route: MainRoute;
-  selectedPageId: string | null;
-  onPickWorkspace: (w: Workspace) => void;
-  onPickSpace: (s: Space) => void;
-  onSelectPage: (id: string) => void;
-  onNavigate: (r: MainRoute) => void;
-  onNewNote: () => void;
-}) {
-  return <KnowledgeSidebar {...props} />;
+function dispatch(name: string, detail?: unknown) {
+  window.dispatchEvent(new CustomEvent(name, { detail }));
+}
+
+export function NavSidebar({ workspace }: { workspace: Workspace | null }) {
+  const wsId = workspace?.id;
+  const groupsQ = useQuery({
+    queryKey: ['nav-groups', wsId],
+    enabled: !!wsId,
+    queryFn: () => listNav(),
+  });
+  const enginesQ = useQuery({
+    queryKey: ['nav-engines', wsId],
+    enabled: !!wsId,
+    queryFn: () => getSearchEngines(),
+  });
+
+  const groups: NavGroup[] = groupsQ.data?.groups ?? [];
+  const engines = enginesQ.data?.engines ?? [];
+  const engine = engines.find((e) => e.isDefault) ?? engines[0];
+
+  return (
+    <aside className="sidebar nav-sidebar">
+      <div className="sb-head">
+        <span className="sb-title">
+          <Compass size={15} /> 常用导航
+        </span>
+      </div>
+
+      <button className="sb-engine" onClick={() => dispatch('nav:engine')}>
+        <Search size={14} />
+        <span>{engine ? `搜索：${engine.name}` : '设置搜索引擎'}</span>
+      </button>
+
+      <div className="sb-scroll">
+        {groups.map((g) => (
+          <div className="sb-nav-group" key={g.id}>
+            <button className="sb-group-btn" title={g.title} onClick={() => dispatch('nav:scroll-to-group', { groupId: g.id })}>
+              <span className="sb-group-name">{g.title}</span>
+              <span className="sb-count">{g.links.length}</span>
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="sb-foot">
+        <button className="sb-foot-btn" onClick={() => dispatch('nav:add-group')}>
+          <Plus size={15} /> 新增分组
+        </button>
+        <button className="sb-foot-btn" onClick={() => dispatch('nav:add-link')}>
+          <Plus size={15} /> 新增网址
+        </button>
+        <button className="sb-foot-btn" onClick={() => dispatch('nav:toggle-edit')}>
+          <Pencil size={15} /> 编辑模式
+        </button>
+      </div>
+    </aside>
+  );
 }

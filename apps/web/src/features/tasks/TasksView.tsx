@@ -13,7 +13,7 @@ import {
   type Task, type TaskStatus, type Project,
   type ViewMode, type CalendarMode, type FocusKind, type RecurrenceUnit
 } from './api';
-import { TasksSidebar, type TaskFilter } from './components/TasksSidebar';
+import type { TaskFilter } from './components/TasksSidebar';
 import { RightPanel } from './components/RightPanel';
 import { KanbanView } from './components/KanbanView';
 import { CalendarView } from './components/CalendarView';
@@ -21,10 +21,7 @@ import { GanttView } from './components/GanttView';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { ConfirmModal } from './components/ConfirmModal';
 import { ProjectModal } from './components/ProjectModal';
-import {
-  addDays, addMonths, startOfDay, endOfDay, startOfWeek, endOfWeek,
-  startOfMonth, endOfMonth, format
-} from './dateUtils';
+import { addDays, addMonths, startOfDay, endOfDay, format } from './dateUtils';
 
 const RECURRENCE_TO_UNIT: Record<string, RecurrenceUnit> = {
   daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year'
@@ -82,14 +79,20 @@ function generateRecurrenceSeries(
   return series;
 }
 
-export function TasksView({ workspace, onNavigate }: { workspace: Workspace; onNavigate?: (route: MainRoute) => void }) {
+export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelectTask }: {
+  workspace: Workspace;
+  onNavigate?: (route: MainRoute) => void;
+  filter: TaskFilter;
+  onFilterChange: (f: TaskFilter) => void;
+  selectedTask: Task | null;
+  onSelectTask: (t: Task | null) => void;
+}) {
   const qc = useQueryClient();
   const toast = useToast();
   const workspaceId = workspace.id;
+  const setSelectedTask = onSelectTask;
 
   const [view, setView] = useState<ViewMode>('kanban');
-  const [filter, setFilter] = useState<TaskFilter>('inbox');
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [calendarMode, setCalendarMode] = useState<CalendarMode>('week');
   const [filterStart, setFilterStart] = useState<string>(format(startOfDay(new Date()), 'yyyy-MM-dd'));
@@ -100,35 +103,20 @@ export function TasksView({ workspace, onNavigate }: { workspace: Workspace; onN
   const projectsQ = useQuery({ queryKey: ['tasks-projects', workspaceId], queryFn: listProjects });
   const projects = projectsQ.data?.projects ?? [];
 
-  // Calendar/Gantt need a date-range query; sidebar list uses status/project filter.
-  const rangeFrom = useMemo(() => {
-    if (view === 'calendar') {
-      if (calendarMode === 'month') return startOfMonth(currentDate).toISOString();
-      if (calendarMode === 'week') return startOfWeek(currentDate).toISOString();
-      return startOfDay(currentDate).toISOString();
-    }
-    return new Date(filterStart).toISOString();
-  }, [view, calendarMode, currentDate, filterStart]);
-  const rangeTo = useMemo(() => {
-    if (view === 'calendar') {
-      if (calendarMode === 'month') return endOfMonth(currentDate).toISOString();
-      if (calendarMode === 'week') return endOfWeek(currentDate).toISOString();
-      return endOfDay(currentDate).toISOString();
-    }
-    return endOfDay(new Date(filterEnd)).toISOString();
-  }, [view, calendarMode, currentDate, filterEnd]);
-
-  const tasksQ = useQuery({
-    queryKey: ['tasks', workspaceId, view, filter, rangeFrom, rangeTo],
-    queryFn: () => listTasks({ from: rangeFrom, to: rangeTo })
-  });
+  // All tasks are loaded once; the active sidebar filter drives every main view
+  // (kanban / calendar / gantt) so the workbench and the rail stay in sync (R2-3).
   const allTasksQ = useQuery({
     queryKey: ['tasks-all', workspaceId],
     queryFn: () => listTasks({})
   });
-  const tasks = tasksQ.data?.tasks ?? [];
-  // Sidebar / right-panel need the full set (incl. unscheduled) for filtering.
-  const allTasks = allTasksQ.data?.tasks ?? tasks;
+  const allTasks = allTasksQ.data?.tasks ?? [];
+  const displayTasks = useMemo(() => {
+    if (filter === 'all') return allTasks.filter((t) => t.status !== 'done');
+    if (typeof filter === 'string' && filter.startsWith('p_')) {
+      return allTasks.filter((t) => t.projectId === filter.slice(2) && t.status !== 'done');
+    }
+    return allTasks.filter((t) => t.status === filter);
+  }, [allTasks, filter]);
 
   const invalidate = useCallback(() => {
     qc.invalidateQueries({ queryKey: ['tasks', workspaceId] });
@@ -278,20 +266,20 @@ export function TasksView({ workspace, onNavigate }: { workspace: Workspace; onN
     if (fresh && fresh !== selectedTask) setSelectedTask(fresh);
   }, [allTasks, selectedTask]);
 
-  if (projectsQ.isLoading || (tasksQ.isLoading && allTasksQ.isLoading)) {
+  if (projectsQ.isLoading || allTasksQ.isLoading) {
     return (
       <div className="tasks-view">
         <div className="tasks-loading">加载任务中…</div>
       </div>
     );
   }
-  if (projectsQ.isError || tasksQ.isError) {
-    const msg = (projectsQ.error as Error)?.message ?? (tasksQ.error as Error)?.message ?? '加载失败';
+  if (projectsQ.isError || allTasksQ.isError) {
+    const msg = (projectsQ.error as Error)?.message ?? (allTasksQ.error as Error)?.message ?? '加载失败';
     return (
       <div className="tasks-view">
         <div className="tasks-error">
           <p>任务加载失败：{msg}</p>
-          <button className="btn-primary" onClick={() => { projectsQ.refetch(); tasksQ.refetch(); allTasksQ.refetch(); }}>重试</button>
+          <button className="btn-primary" onClick={() => { projectsQ.refetch(); allTasksQ.refetch(); }}>重试</button>
         </div>
       </div>
     );
@@ -299,24 +287,6 @@ export function TasksView({ workspace, onNavigate }: { workspace: Workspace; onN
 
   return (
     <div className="tasks-view">
-      <TasksSidebar
-        tasks={allTasks}
-        projects={projects}
-        filter={filter}
-        onFilterChange={setFilter}
-        onAddTask={addTask}
-        onSelectTask={setSelectedTask}
-        onToggleStatus={toggleStatus}
-        onAddProject={(name, color) => createProjectMut.mutate({ name, color })}
-        onUpdateProject={(id, updates) => updateProjectMut.mutate({ id, input: updates })}
-        onDeleteProject={(p) => setConfirm({
-          open: true, title: '确认删除项目',
-          message: `确定要删除「${p.name}」吗？相关任务将变为未分类。`,
-          onConfirm: () => deleteProjectMut.mutate(p.id)
-        })}
-        selectedTaskId={selectedTaskId}
-      />
-
       <div className="tasks-main">
         <div className="tasks-toolbar">
           <div className="tasks-viewswitch">
@@ -369,7 +339,7 @@ export function TasksView({ workspace, onNavigate }: { workspace: Workspace; onN
         <div className="tasks-canvas">
           {view === 'calendar' && (
             <CalendarView
-              tasks={tasks}
+              tasks={displayTasks}
               projects={projects}
               onTaskUpdate={updateTaskHandler}
               onSelectTask={setSelectedTask}
@@ -382,7 +352,7 @@ export function TasksView({ workspace, onNavigate }: { workspace: Workspace; onN
           )}
           {view === 'gantt' && (
             <GanttView
-              tasks={tasks}
+              tasks={displayTasks}
               projects={projects}
               onSelectTask={setSelectedTask}
               rangeStart={new Date(filterStart)}
@@ -392,7 +362,7 @@ export function TasksView({ workspace, onNavigate }: { workspace: Workspace; onN
           )}
           {view === 'kanban' && (
             <KanbanView
-              tasks={filter === 'all' || (filter as string).startsWith('p_') ? allTasks : allTasks}
+              tasks={displayTasks}
               projects={projects}
               onTaskUpdate={updateTaskHandler}
               onSelectTask={setSelectedTask}

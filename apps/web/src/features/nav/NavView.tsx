@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Search, Download, Upload, Pencil, Trash2, Check, X, Settings as SettingsIcon, Clock
+  Plus, Search, Download, Upload, Pencil, Trash2, X, Settings as SettingsIcon, Clock
 } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import { useDialog } from '../../components/Dialog';
@@ -187,15 +187,36 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
     } catch { toast.error('导入失败：文件格式错误'); }
   };
 
+  // R2-6: receive control signals from the shell-level navigation sidebar.
+  useEffect(() => {
+    const onScroll = (e: Event) => {
+      const id = (e as CustomEvent<{ groupId: string }>).detail?.groupId;
+      if (id) document.getElementById(`nav-group-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const onAddGroup = () => openGroupModal(null);
+    const onAddLink = () => openSiteModal(groups[0]?.id ?? '', null);
+    const onToggleEdit = () => setEditMode((v) => !v);
+    const onEngine = () => { setEngineDraft({ name: activeEngine.name, urlTemplate: activeEngine.urlTemplate }); setEngineModal(true); };
+    window.addEventListener('nav:scroll-to-group', onScroll);
+    window.addEventListener('nav:add-group', onAddGroup);
+    window.addEventListener('nav:add-link', onAddLink);
+    window.addEventListener('nav:toggle-edit', onToggleEdit);
+    window.addEventListener('nav:engine', onEngine);
+    return () => {
+      window.removeEventListener('nav:scroll-to-group', onScroll);
+      window.removeEventListener('nav:add-group', onAddGroup);
+      window.removeEventListener('nav:add-link', onAddLink);
+      window.removeEventListener('nav:toggle-edit', onToggleEdit);
+      window.removeEventListener('nav:engine', onEngine);
+    };
+  }, [groups, openGroupModal, openSiteModal, setEditMode, activeEngine, setEngineDraft, setEngineModal]);
+
   return (
     <div className="nav-view">
       <div className="nav-controlbar">
         <button className="nav-ctrl" onClick={onExport}><Download size={16} /> 备份</button>
         <button className="nav-ctrl" onClick={() => fileRef.current?.click()}><Upload size={16} /> 恢复</button>
         <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { if (e.target.files?.[0]) onImportFile(e.target.files[0]); e.target.value = ''; }} />
-        {editMode && <button className="nav-ctrl" onClick={() => openGroupModal(null)}><Plus size={16} /> 分组</button>}
-        <div className="nav-ctrl-sep" />
-        <button className={`nav-ctrl ${editMode ? 'primary' : ''}`} onClick={() => setEditMode((v) => !v)}>{editMode ? <><Check size={16} /> 完成</> : <><Pencil size={16} /> 整理桌面</>}</button>
       </div>
 
       <NavClock />
@@ -227,6 +248,7 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
           {groups.map((group, gIndex) => (
             <section
               key={group.id}
+              id={`nav-group-${group.id}`}
               className={`nav-group ${dragOverGroup === group.id ? 'drag-over' : ''}`}
               onDragOver={editMode ? (e) => { e.preventDefault(); setDragOverGroup(group.id); } : undefined}
               onDragLeave={editMode ? () => setDragOverGroup(null) : undefined}

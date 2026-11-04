@@ -30,6 +30,9 @@ import { AskView } from '../ask/AskView';
 import { GraphView } from '../../GraphView';
 import { SettingsView } from '../settings/SettingsView';
 import { TasksView } from '../tasks/TasksView';
+import { listProjects, listTasks, createTask, updateTask, deleteProject, createProject, updateProject, type Task, type TaskStatus, type Project } from '../tasks/api';
+import { TasksSidebar, type TaskFilter } from '../tasks/components/TasksSidebar';
+import { useDialog } from '../../components/Dialog';
 import { NavView } from '../nav/NavView';
 import type { MainRoute, PageDetail, Space, TreeNode, User, Workspace } from '../../types';
 
@@ -230,6 +233,61 @@ export function ShellLayout({ me }: { me: User }) {
   );
   const onLogout = useCallback(() => logout.mutate(), [logout]);
 
+  // R2-3: lift the task module's filter + selection to the shell so the sidebar
+  // (rendered in the shell column, in parallel with the knowledge sidebar) and the
+  // task workbench stay in sync, and the filter survives module switches.
+  const dialog = useDialog();
+  const TASK_FILTER_KEY = 'zp.taskFilter';
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>(() => {
+    try { const v = sessionStorage.getItem(TASK_FILTER_KEY); if (v) return v as TaskFilter; } catch { /* ignore */ }
+    return 'inbox';
+  });
+  const onTaskFilterChange = useCallback((f: TaskFilter) => {
+    setTaskFilter(f);
+    try { sessionStorage.setItem(TASK_FILTER_KEY, f); } catch { /* ignore */ }
+  }, []);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const selectedTaskId = selectedTask?.id ?? null;
+  const onSelectTask = useCallback((t: Task | null) => setSelectedTask(t), []);
+
+  // Tasks data for the shell-level sidebar (query keys are shared with TasksView
+  // so React Query dedupes the network requests).
+  const tasksWsForSidebar = workspace ?? workspaces[0] ?? null;
+  const sidebarTasksQ = useQuery({ queryKey: ['tasks-all', tasksWsForSidebar?.id], enabled: !!tasksWsForSidebar, queryFn: () => listTasks({}) });
+  const sidebarProjectsQ = useQuery({ queryKey: ['tasks-projects', tasksWsForSidebar?.id], enabled: !!tasksWsForSidebar, queryFn: listProjects });
+  const sidebarTasks = sidebarTasksQ.data?.tasks ?? [];
+  const sidebarProjects = sidebarProjectsQ.data?.projects ?? [];
+
+  const invalidateSidebar = useCallback(() => {
+    const id = tasksWsForSidebar?.id;
+    if (!id) return;
+    qc.invalidateQueries({ queryKey: ['tasks', id] });
+    qc.invalidateQueries({ queryKey: ['tasks-all', id] });
+    qc.invalidateQueries({ queryKey: ['tasks-projects', id] });
+  }, [qc, tasksWsForSidebar]);
+
+  const sidebarCreateTask = useMutation({ mutationFn: (input: Partial<Task>) => createTask({ workspaceId: tasksWsForSidebar!.id, ...input }), onSuccess: invalidateSidebar, onError: (e) => toast.error(`创建失败：${(e as Error).message}`) });
+  const sidebarUpdateTask = useMutation({ mutationFn: ({ id, input }: { id: string; input: Partial<Task> }) => updateTask(id, input), onSuccess: invalidateSidebar, onError: (e) => toast.error(`更新失败：${(e as Error).message}`) });
+  const sidebarCreateProject = useMutation({ mutationFn: (input: Partial<Project>) => createProject(input), onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks-projects', tasksWsForSidebar?.id] }), onError: (e) => toast.error(`项目创建失败：${(e as Error).message}`) });
+  const sidebarUpdateProject = useMutation({ mutationFn: ({ id, input }: { id: string; input: Partial<Project> }) => updateProject(id, input), onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks-projects', tasksWsForSidebar?.id] }), onError: (e) => toast.error(`项目更新失败：${(e as Error).message}`) });
+  const sidebarDeleteProjectMut = useMutation({ mutationFn: (id: string) => deleteProject(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks-projects', tasksWsForSidebar?.id] }), onError: (e) => toast.error(`项目删除失败：${(e as Error).message}`) });
+
+  const sidebarAddTask = useCallback((title: string) => {
+    const status: TaskStatus = (typeof taskFilter === 'string' && ['inbox', 'today', 'next', 'scheduled', 'waiting', 'someday'].includes(taskFilter)) ? (taskFilter as TaskStatus) : 'inbox';
+    const projectId = typeof taskFilter === 'string' && taskFilter.startsWith('p_') ? taskFilter.slice(2) : null;
+    sidebarCreateTask.mutate({ title, status, projectId });
+  }, [sidebarCreateTask, taskFilter]);
+
+  const sidebarToggleStatus = useCallback((task: Task) => {
+    const done = task.status === 'done';
+    sidebarUpdateTask.mutate({ id: task.id, input: done ? { status: 'inbox', progress: 0, completedAt: null } : { status: 'done', progress: 100, completedAt: new Date().toISOString() } });
+  }, [sidebarUpdateTask]);
+
+  const sidebarDeleteProjectHandler = useCallback(async (p: Project) => {
+    const ok = await dialog.confirm({ title: `删除项目「${p.name}」？`, message: '相关任务将变为未分类。', confirmText: '删除', danger: true });
+    if (ok) sidebarDeleteProjectMut.mutate(p.id);
+  }, [dialog, sidebarDeleteProjectMut]);
+
   // Tree for the command palette (instant title search within the current space).
   const { data: treeData } = useQuery<{ tree: TreeNode[] }>({
     queryKey: ['page-tree', space?.id],
@@ -246,7 +304,16 @@ export function ShellLayout({ me }: { me: User }) {
       const tasksWs = workspace ?? workspaces[0] ?? null;
       if (ctx.isResolving) return <EditorSkeleton />;
       if (!tasksWs) return <AccessDenied />;
-      return <TasksView workspace={tasksWs} onNavigate={onNavigate} />;
+      return (
+        <TasksView
+          workspace={tasksWs}
+          filter={taskFilter}
+          onFilterChange={onTaskFilterChange}
+          selectedTask={selectedTask}
+          onSelectTask={onSelectTask}
+          onNavigate={onNavigate}
+        />
+      );
     }
 
     if (navMatch) {
@@ -363,8 +430,23 @@ export function ShellLayout({ me }: { me: User }) {
 
   return (
     <div className="app-shell-3">
+      <TopBar
+        space={space}
+        spaces={spaces ?? []}
+        route={activeRoute}
+        module={moduleKey}
+        pageId={pageId}
+        pageTitle={ctx.pageTitle}
+        tree={treeData?.tree ?? []}
+        onOpenPalette={() => setPaletteOpen(true)}
+        onNavigate={onNavigateWrapped}
+        me={meUser}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
+        onLogout={onLogout}
+      />
 
-      <div className={`shell-body${moduleKey === 'tasks' ? ' no-sidebar' : ''}`}>
+      <div className="shell-body">
         {moduleKey === 'kb' && (
           <KnowledgeSidebar
             workspace={workspace}
@@ -380,67 +462,53 @@ export function ShellLayout({ me }: { me: User }) {
             onNewNote={onNewNote}
           />
         )}
-        {moduleKey === 'nav' && (
-          <NavSidebar
-            workspace={workspace}
-            workspaces={workspaces}
-            space={space}
-            spaces={spaces}
-            route={activeRoute}
-            selectedPageId={pageId}
-            onPickWorkspace={onPickWorkspace}
-            onPickSpace={onPickSpace}
-            onSelectPage={onSelectPage}
-            onNavigate={onNavigate}
-            onNewNote={onNewNote}
+        {moduleKey === 'tasks' && tasksWsForSidebar && (
+          <TasksSidebar
+            tasks={sidebarTasks}
+            projects={sidebarProjects}
+            filter={taskFilter}
+            onFilterChange={onTaskFilterChange}
+            onAddTask={sidebarAddTask}
+            onSelectTask={onSelectTask}
+            onToggleStatus={sidebarToggleStatus}
+            onAddProject={(name, color) => sidebarCreateProject.mutate({ name, color })}
+            onUpdateProject={(id, updates) => sidebarUpdateProject.mutate({ id, input: updates })}
+            onDeleteProject={sidebarDeleteProjectHandler}
+            selectedTaskId={selectedTaskId}
           />
         )}
-      <div className="main-col">
-        <TopBar
-          workspace={workspace}
-          workspaces={workspaces ?? []}
-          space={space}
-          spaces={spaces ?? []}
-          route={activeRoute}
-          module={moduleKey}
-          pageId={pageId}
-          pageTitle={ctx.pageTitle}
-          tree={treeData?.tree ?? []}
-          onOpenPalette={() => setPaletteOpen(true)}
-          onNavigate={onNavigateWrapped}
-          me={meUser}
-          theme={theme}
-          onToggleTheme={onToggleTheme}
-          onLogout={onLogout}
-        />
+        {moduleKey === 'nav' && (
+          <NavSidebar workspace={workspace} />
+        )}
 
-        <div className="center-and-right">
-          <div className="center">{renderCenter()}</div>
+        <div className="main-col">
+          <div className="center-and-right">
+            <div className="center">{renderCenter()}</div>
 
-          {showRight && (
-            <>
-              <div className={`right-region${rightOpen ? '' : ' collapsed'}`}>
-                <RightPanel
-                  workspace={workspace!}
-                  space={space!}
-                  pageId={pageId!}
-                  onOpenPage={onOpenPage}
-                  onClose={() => setRightOpen(false)}
-                />
-              </div>
-              {!rightOpen && (
-                <button
-                  className="right-reopen"
-                  title="展开侧栏"
-                  onClick={() => setRightOpen(true)}
-                >
-                  <PanelRight size={16} />
-                </button>
-              )}
-            </>
-          )}
+            {showRight && (
+              <>
+                <div className={`right-region${rightOpen ? '' : ' collapsed'}`}>
+                  <RightPanel
+                    workspace={workspace!}
+                    space={space!}
+                    pageId={pageId!}
+                    onOpenPage={onOpenPage}
+                    onClose={() => setRightOpen(false)}
+                  />
+                </div>
+                {!rightOpen && (
+                  <button
+                    className="right-reopen"
+                    title="展开侧栏"
+                    onClick={() => setRightOpen(true)}
+                  >
+                    <PanelRight size={16} />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
       </div>
 
       <CommandPalette

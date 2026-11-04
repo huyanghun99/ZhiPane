@@ -8,7 +8,7 @@ import { useEditorStatus } from './editorStatus';
 import { SaveIndicator } from './SaveIndicator';
 import { urls } from '../../nav';
 import type { ModuleKey } from '../../types';
-import type { MainRoute, Space, TreeNode, User, Workspace } from '../../types';
+import type { MainRoute, Space, TreeNode, User } from '../../types';
 import type { ThemeMode } from '../../theme';
 
 const ROUTE_LABEL: Record<MainRoute, string> = {
@@ -36,8 +36,6 @@ function buildCrumbChain(tree: TreeNode[] | undefined, pageId: string | null): T
 }
 
 export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpenPalette, onNavigate, onSwitchSpace, tree, me, theme, onToggleTheme, onLogout }: {
-  workspace: Workspace | null;
-  workspaces: Workspace[];
   space: Space | null;
   spaces: Space[];
   route: MainRoute;
@@ -50,7 +48,6 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
   theme?: ThemeMode;
   onToggleTheme?: () => void;
   onLogout?: () => void;
-  onSwitchWorkspace?: (wsId: string) => void;
   onSwitchSpace?: (spId: string) => void;
   tree?: TreeNode[];
 }) {
@@ -107,7 +104,7 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
     const showAll = parts.length <= 3;
     const visible: Array<Part | '…'> = showAll
       ? parts
-      : ['…', parts[parts.length - 2], parts[parts.length - 1]];
+      : [parts[0], '…', parts[parts.length - 1]];
     return (
       <>
         {visible.map((p, i) => {
@@ -120,7 +117,7 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
                   <button className="crumb-link" onClick={() => setMidOpen((v) => !v)}>…</button>
                   {midOpen && (
                     <div className="crumb-pop">
-                      {parts.slice(0, parts.length - 2).map((m) => (
+                      {parts.slice(1, parts.length - 1).map((m) => (
                         <button key={m.id} className="crumb-pop-item" onClick={() => { setMidOpen(false); m.onClick(); }}>
                           {m.label}
                         </button>
@@ -149,7 +146,41 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
 
   return (
     <header className="topbar">
-      {/* Module switcher — pure client-side route switch, no API call */}
+      {/* Breadcrumb — only the knowledge-base module shows the space + page path. */}
+      {module === 'kb' && space && (
+        <div className="crumbs">
+          <div className="crumb-dropdown" ref={spDropRef}>
+            <button className="crumb-link" onClick={() => setSpaceDropdown((v) => !v)}>
+              {space.name} <ChevronDown size={11} />
+            </button>
+            {spaceDropdown && spaces.length > 0 && (
+              <div className="crumb-pop">
+                {spaces.map((sp) => (
+                  <button key={sp.id} className={`crumb-pop-item${sp.id === space.id ? ' active' : ''}`}
+                    onClick={() => { setSpaceDropdown(false); onSwitchSpace?.(sp.id); }}>
+                    {sp.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {route === 'page' && pageId && crumbChain.length > 0 ? (
+            renderChain(crumbChain)
+          ) : crumbTail && crumbTail !== '首页' ? (
+            <>
+              <ChevronRight size={13} className="crumb-sep" />
+              <span className="crumb-current">{crumbTail}</span>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      <button className="palette-trigger" onClick={onOpenPalette}>
+        <Search size={15} />
+        <span>搜索笔记或执行命令</span>
+        <kbd>⌘K</kbd>
+      </button>
+
       <div className="topbar-mods" role="tablist" aria-label="模块切换">
         <button
           className={`mod-tab${module === 'kb' ? ' active' : ''}`}
@@ -177,41 +208,6 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
         </button>
       </div>
 
-      <button className="palette-trigger" onClick={onOpenPalette}>
-        <Search size={15} />
-        <span>搜索笔记或执行命令</span>
-        <kbd>⌘K</kbd>
-      </button>
-
-      {module === 'kb' && (
-        <div className="crumbs">
-          {route === 'page' && pageId && crumbChain.length > 0 ? (
-            <>
-              {space && (
-                <div className="crumb-dropdown" ref={spDropRef}>
-                  <button className="crumb-link" onClick={() => setSpaceDropdown((v) => !v)}>
-                    {space.name} <ChevronDown size={11} />
-                  </button>
-                  {spaceDropdown && spaces.length > 0 && (
-                    <div className="crumb-pop">
-                      {spaces.map((sp) => (
-                        <button key={sp.id} className={`crumb-pop-item${sp.id === space.id ? ' active' : ''}`}
-                          onClick={() => { setSpaceDropdown(false); onSwitchSpace?.(sp.id); }}>
-                          {sp.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              {renderChain(crumbChain)}
-            </>
-          ) : crumbTail ? (
-            <span className="crumb-current">{crumbTail}</span>
-          ) : null}
-        </div>
-      )}
-
       <div className="topbar-actions">
         {status.hasPage && <SaveIndicator state={status.saveState} />}
         {status.hasPage && status.onShare && (
@@ -231,6 +227,27 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
             )}
           </div>
         )}
+
+        <div className="more-menu" ref={userRef}>
+          <button className="avatar-trigger" onClick={() => setUserOpen((v) => !v)}>
+            {(me?.name ?? 'U').slice(0, 1).toUpperCase()}
+          </button>
+          {userOpen && (
+            <div className="more-pop">
+              <div className="more-item" style={{ cursor: 'default', color: 'var(--muted)' }}>
+                {me?.name}
+              </div>
+              <div className="more-sep" />
+              <button className="more-item" onClick={onToggleTheme}>
+                {theme === 'dark' ? <Sun size={14} /> : theme === 'light' ? <Moon size={14} /> : <Monitor size={14} />}
+                {' '}切换主题（当前：{theme === 'dark' ? '深色' : theme === 'light' ? '浅色' : '跟随系统'}）
+              </button>
+              <button className="more-item" onClick={() => navigate(urls.settings())}><Settings size={14} /> 设置</button>
+              <div className="more-sep" />
+              <button className="more-item danger" onClick={onLogout}><LogOut size={14} /> 退出登录</button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

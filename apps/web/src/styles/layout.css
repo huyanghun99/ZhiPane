@@ -350,7 +350,7 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 .crumb-mid { color: var(--text-2); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crumb-current { color: var(--text); font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.palette-trigger { flex: 0 1 440px; max-width: 480px; height: 38px; justify-content: flex-start; gap: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); padding: 0 12px; border-radius: 10px; font-size: 13px; }
+.palette-trigger { flex: 0 0 320px; max-width: 320px; height: 38px; justify-content: flex-start; gap: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); padding: 0 12px; border-radius: 10px; font-size: 13px; }
 .palette-trigger:hover { background: var(--surface-3); }
 .palette-trigger span { flex: 1; text-align: left; }
 .palette-trigger kbd { font-size: 11px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 1px 6px; color: var(--text-2); }
@@ -362,7 +362,7 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 .topbar-mods { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 .mod-tab { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 0; background: transparent; color: var(--muted); border-radius: 8px; cursor: pointer; transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
 .mod-tab:hover { background: var(--surface-2); color: var(--text-2); }
-.mod-tab.active { background: var(--surface-2); color: var(--primary); box-shadow: inset 3px 0 0 var(--primary); }
+.mod-tab.active { background: var(--surface-3); color: var(--primary); }
 .save-ind { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .save-ind.dirty { color: var(--warn); }
 .save-ind.err { color: var(--danger); }
@@ -760,3 +760,39 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .ai-send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ===== R2-6: Archive center (migrate inline styles to tokens) ===== */
+.archive-page { padding: 24px; max-width: 960px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+.archive-tabs { display: flex; gap: 8px; margin: 16px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.archive-tab {
+  background: transparent; border: none; padding: 8px 12px; cursor: pointer;
+  color: var(--text-2); border-bottom: 2px solid transparent; font-size: 14px; border-radius: 0;
+}
+.archive-tab:hover { color: var(--text); }
+.archive-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.archive-group { margin-bottom: 16px; }
+.archive-group h4 { margin: 8px 0; font-size: 14px; color: var(--text); }
+.archive-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;
+}
+.archive-row:hover { border-color: var(--border-strong); }
+.archive-item-main { min-width: 0; }
+.archive-item-title { font-weight: 600; }
+.archive-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ===== R2-6: Navigation module shell sidebar ===== */
+.sb-engine {
+  display: flex; align-items: center; gap: 8px; width: calc(100% - 16px); margin: 0 8px 8px;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--text-2); font-size: 13px; cursor: pointer; text-align: left;
+}
+.sb-engine:hover { border-color: var(--border-strong); color: var(--text); }
+.sb-group-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+  padding: 8px 10px; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--text-2); font-size: 13px; cursor: pointer; text-align: left;
+}
+.sb-group-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.sb-group-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-count { font-size: 11px; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 1px 7px; }

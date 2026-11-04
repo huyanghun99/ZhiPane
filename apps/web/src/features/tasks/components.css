@@ -8,9 +8,9 @@
 .tasks-sidebar {
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  height: 100%;
   overflow: hidden;
   min-height: 0;
 }
