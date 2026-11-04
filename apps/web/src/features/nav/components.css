@@ -5,19 +5,19 @@
 .nav-view {
   height: 100%;
   overflow-y: auto;
-  padding: var(--space-6) var(--space-4) 120px;
+  padding: var(--space-6) var(--space-4);
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--primary) 5%, var(--bg)) 100%);
+  background: var(--bg);
 }
 
 .nav-header { text-align: center; margin-bottom: var(--space-2); width: 100%; }
 .nav-clock {
-  font-size: 4rem; font-weight: 700; color: var(--primary);
-  text-shadow: 0 0 25px color-mix(in srgb, var(--primary) 30%, transparent); letter-spacing: -1px; line-height: 1.1;
+  font-size: var(--text-2xl); font-weight: 700; color: var(--text);
+  letter-spacing: -0.5px; line-height: 1.2;
 }
-.nav-date { color: var(--muted); font-size: 0.95rem; opacity: 0.85; margin-bottom: var(--space-5); }
+.nav-date { color: var(--muted); font-size: 0.95rem; opacity: 0.85; margin-bottom: var(--space-3); }
 
 .nav-searchwrap {
   width: 100%; max-width: 600px; position: relative; margin: 0 auto var(--space-6);
@@ -25,12 +25,11 @@
 }
 .nav-search-icon { position: absolute; left: 20px; color: var(--muted); width: 20px; pointer-events: none; }
 .nav-search {
-  flex: 1; padding: 14px 52px 14px 50px; border-radius: 12px;
-  border: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 80%, transparent);
-  backdrop-filter: blur(12px); font-size: 1.1rem; outline: none; color: var(--text);
-  box-shadow: var(--shadow-md);
+  flex: 1; padding: 12px 52px 12px 50px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-size: 1rem; outline: none; color: var(--text);
 }
-.nav-search:focus { border-color: var(--primary); box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 18%, transparent); }
+.nav-search:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); }
 .nav-engine-btn {
   position: absolute; right: 10px; width: 34px; height: 34px; border-radius: 8px;
   border: none; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -45,9 +44,8 @@
 .nav-group.drag-over { background: color-mix(in srgb, var(--primary) 6%, transparent); border: 2px dashed var(--primary); }
 .nav-group-head { display: flex; align-items: center; margin-bottom: var(--space-3); padding-left: 5px; }
 .nav-group-title {
-  font-size: 1.05rem; font-weight: 600; color: var(--highlight, var(--primary));
-  background: color-mix(in srgb, var(--primary) 12%, transparent); padding: 6px 14px; border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  font-size: 0.85rem; font-weight: 600; color: var(--muted);
+  padding: 0; border: none; background: none;
 }
 .nav-group-actions { margin-left: 10px; display: none; gap: 8px; }
 .nav-view.edit .nav-group-actions { display: flex; }
@@ -60,23 +58,20 @@
 .nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; min-height: 100px; padding: 4px; }
 
 .nav-card {
-  aspect-ratio: 1/1; background: var(--surface); backdrop-filter: blur(12px);
-  border: 1px solid var(--border); border-radius: 18px;
+  aspect-ratio: 1/1; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 16px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-decoration: none; cursor: pointer; transition: all 0.2s; position: relative; padding: 10px; user-select: none;
-  box-shadow: var(--shadow-sm);
+  text-decoration: none; cursor: pointer; transition: background 0.15s, transform 0.15s, border-color 0.15s; position: relative; padding: 10px; user-select: none;
 }
 .nav-card:hover {
-  background: var(--surface-2); transform: translateY(-4px); border-color: var(--primary);
-  box-shadow: var(--shadow-md), 0 0 15px color-mix(in srgb, var(--primary) 20%, transparent);
+  background: var(--surface-2); transform: translateY(-2px);
 }
 .nav-text-icon {
   width: 48px; height: 48px; background: var(--surface-2); border: 1px solid var(--border);
   border-radius: 12px; display: flex; align-items: center; justify-content: center;
-  font-size: 1.6rem; font-weight: 700; color: var(--primary); margin-bottom: 10px;
-  box-shadow: inset 0 2px 4px color-mix(in srgb, var(--text) 8%, transparent); text-shadow: 0 0 10px color-mix(in srgb, var(--primary) 40%, transparent);
+  font-size: 1.6rem; font-weight: 700; color: var(--text-2); margin-bottom: 10px;
 }
-.nav-card:hover .nav-text-icon { color: var(--secondary, var(--highlight)); border-color: var(--primary); }
+.nav-card:hover .nav-text-icon { color: var(--primary); }
 .nav-card span { font-size: 0.85rem; color: var(--text-2); font-weight: 500; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-card:hover span { color: var(--primary); }
 
@@ -93,20 +88,19 @@
 .nav-view.edit .nav-card-edit-overlay { display: block; }
 
 .nav-card.nav-add { border: 1px dashed var(--border-strong); background: transparent; box-shadow: none; }
-.nav-card.nav-add:hover { border-color: var(--primary); background: rgba(34, 197, 94, 0.05); }
+.nav-card.nav-add:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); }
 .nav-card.nav-add svg { color: var(--muted); }
 .nav-card.nav-add:hover svg { color: var(--primary); }
 
 .nav-controlbar {
-  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-  background: var(--surface); backdrop-filter: blur(16px); padding: 8px 24px;
-  border-radius: 50px; display: flex; gap: 16px; box-shadow: var(--shadow-pop);
-  border: 1px solid var(--border); z-index: 100; align-items: center;
+  width: 100%; max-width: 1200px;
+  display: flex; gap: 12px; justify-content: flex-end; align-items: center;
+  padding: 4px 4px 14px; margin-bottom: var(--space-3);
 }
-.nav-ctrl { background: none; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--text-2); display: flex; align-items: center; gap: 6px; transition: 0.2s; white-space: nowrap; }
-.nav-ctrl:hover { color: var(--primary); }
-.nav-ctrl.primary { background: var(--primary); color: #fff; padding: 8px 20px; }
-.nav-ctrl.primary:hover { background: var(--secondary, var(--highlight)); transform: translateY(-1px); }
+.nav-ctrl { background: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: var(--text-2); display: flex; align-items: center; gap: 6px; transition: background 0.15s, color 0.15s; white-space: nowrap; }
+.nav-ctrl:hover { color: var(--primary); background: var(--surface-2); }
+.nav-ctrl.primary { background: var(--primary); color: #fff; border-color: var(--primary); padding: 7px 16px; }
+.nav-ctrl.primary:hover { background: var(--primary-hover); color: #fff; }
 .nav-ctrl-sep { width: 1px; height: 16px; background: var(--border); }
 
 /* Reuse the shared modal styling already present in base.css / components.css

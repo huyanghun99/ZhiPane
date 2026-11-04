@@ -4,6 +4,7 @@ import {
   Plus, Search, Download, Upload, Pencil, Trash2, Check, X, Settings as SettingsIcon, Clock
 } from 'lucide-react';
 import { useToast } from '../../components/Toast';
+import { useDialog } from '../../components/Dialog';
 import {
   listNav, createGroup, updateGroup, deleteGroup, createLink, updateLink, deleteLink,
   recordOpen, reorderNav, getSearchEngines, setSearchEngine, exportNav, importNav,
@@ -33,6 +34,7 @@ function NavClock() {
 export function NavView({ workspace }: { workspace: { id: string } }) {
   const qc = useQueryClient();
   const toast = useToast();
+  const dialog = useDialog();
   const workspaceId = workspace.id;
 
   const { data, isLoading } = useQuery({
@@ -187,6 +189,15 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
 
   return (
     <div className="nav-view">
+      <div className="nav-controlbar">
+        <button className="nav-ctrl" onClick={onExport}><Download size={16} /> 备份</button>
+        <button className="nav-ctrl" onClick={() => fileRef.current?.click()}><Upload size={16} /> 恢复</button>
+        <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { if (e.target.files?.[0]) onImportFile(e.target.files[0]); e.target.value = ''; }} />
+        {editMode && <button className="nav-ctrl" onClick={() => openGroupModal(null)}><Plus size={16} /> 分组</button>}
+        <div className="nav-ctrl-sep" />
+        <button className={`nav-ctrl ${editMode ? 'primary' : ''}`} onClick={() => setEditMode((v) => !v)}>{editMode ? <><Check size={16} /> 完成</> : <><Pencil size={16} /> 整理桌面</>}</button>
+      </div>
+
       <NavClock />
 
       <div className="nav-searchwrap">
@@ -235,7 +246,7 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
                 {editMode && (
                   <span className="nav-group-actions">
                     <button className="nav-mini" onClick={() => openGroupModal(group.id)}><Pencil size={12} /></button>
-                    <button className="nav-mini danger" onClick={() => { if (confirm('删除分组及全部链接？')) deleteGroupMut.mutate(group.id); }}><Trash2 size={12} /></button>
+                    <button className="nav-mini danger" onClick={() => { dialog.confirm({ title: '删除分组', message: '删除分组及全部链接？', danger: true }).then((ok) => { if (ok) deleteGroupMut.mutate(group.id); }); }}><Trash2 size={12} /></button>
                   </span>
                 )}
               </div>
@@ -256,7 +267,7 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
                   >
                     {editMode && (
                       <>
-                        <button className="nav-card-del" onClick={(e) => { e.stopPropagation(); if (confirm('删除该链接？')) deleteLinkMut.mutate(link.id); }}>×</button>
+                        <button className="nav-card-del" onClick={(e) => { e.stopPropagation(); dialog.confirm({ title: '删除链接', message: '删除该链接？', danger: true }).then((ok) => { if (ok) deleteLinkMut.mutate(link.id); }); }}>×</button>
                         <div className="nav-card-edit" onClick={(e) => { e.stopPropagation(); openSiteModal(group.id, link.id); }} />
                       </>
                     )}
@@ -274,15 +285,6 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
           ))}
         </div>
       )}
-
-      <div className="nav-controlbar">
-        <button className="nav-ctrl" onClick={onExport}><Download size={16} /> 备份</button>
-        <button className="nav-ctrl" onClick={() => fileRef.current?.click()}><Upload size={16} /> 恢复</button>
-        <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { if (e.target.files?.[0]) onImportFile(e.target.files[0]); e.target.value = ''; }} />
-        {editMode && <button className="nav-ctrl" onClick={() => openGroupModal(null)}><Plus size={16} /> 分组</button>}
-        <div className="nav-ctrl-sep" />
-        <button className={`nav-ctrl ${editMode ? 'primary' : ''}`} onClick={() => setEditMode((v) => !v)}>{editMode ? <><Check size={16} /> 完成</> : <><Pencil size={16} /> 整理桌面</>}</button>
-      </div>
 
       {/* site modal */}
       {siteModal && (
