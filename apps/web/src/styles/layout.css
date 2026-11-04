@@ -345,6 +345,8 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 
 .sb-tree { display: flex; flex-direction: column; }
 .sb-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); }
+.sb-foot-btn { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--muted); font-size: 13px; padding: 6px 8px; border-radius: 8px; cursor: pointer; transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
+.sb-foot-btn:hover { background: var(--surface-2); color: var(--text-2); }
 .sb-user { font-size: 13px; color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ------- Top bar (crumbs + palette + status + more) ------- */

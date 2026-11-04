@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Archive, BookOpen, Brain, ChevronDown, ChevronsLeft, Clock, Download, FileText, Home, LayoutGrid, Pencil, Plus, Search, Sparkles, Star, Trash2, Wand2
+  Archive, BookOpen, Brain, ChevronDown, ChevronsLeft, Clock, Download, FileText, Home, LayoutGrid, Pencil, Plus, Search, Settings, Sparkles, Star, Trash2, Wand2
 } from 'lucide-react';
 import { api, del, patch, post, renamePage, movePage, copyPage } from '../../api';
 import { useToast } from '../../components/Toast';
@@ -255,8 +255,7 @@ export function KnowledgeSidebar({
     { key: 'organize', label: '智能整理', icon: <Wand2 size={16} />, badge: inboxCount },
     { key: 'search', label: '搜索', icon: <Search size={16} /> },
     { key: 'ask', label: '知识问答', icon: <Brain size={16} /> },
-    { key: 'map', label: '关系图', icon: <LayoutGrid size={16} /> },
-    { key: 'archive', label: '归档中心', icon: <Archive size={16} /> }
+    { key: 'map', label: '关系图', icon: <LayoutGrid size={16} /> }
   ];
 
   return (
@@ -398,6 +397,15 @@ export function KnowledgeSidebar({
             )}
           </div>
         )}
+      </div>
+
+      <div className="sb-foot">
+        <button className="sb-foot-btn" onClick={() => onNavigate('archive')}>
+          <Archive size={15} /> 归档中心
+        </button>
+        <button className="sb-foot-btn" onClick={() => onNavigate('settings')} title="设置">
+          <Settings size={15} /> 设置
+        </button>
       </div>
 
       {menu && (
