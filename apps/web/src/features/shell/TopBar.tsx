@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronDown, ChevronRight, Download, MoreHorizontal,
-  Printer, Search, Share2, Trash2, Upload
+  BookOpen, CheckSquare, ChevronDown, ChevronRight, Compass, Download,
+  MoreHorizontal, Printer, Search, Share2, Trash2, Upload
 } from 'lucide-react';
 import { useEditorStatus } from './editorStatus';
 import { SaveIndicator } from './SaveIndicator';
@@ -34,7 +34,7 @@ function buildCrumbChain(tree: TreeNode[] | undefined, pageId: string | null): T
   return chain;
 }
 
-export function TopBar({ space, spaces, route, pageId, pageTitle, onOpenPalette, onSwitchSpace, tree }: {
+export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpenPalette, onNavigate, onSwitchSpace, tree }: {
   workspace: Workspace | null;
   workspaces: Workspace[];
   space: Space | null;
@@ -44,6 +44,7 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, onOpenPalette,
   pageId: string | null;
   pageTitle?: string | null;
   onOpenPalette: () => void;
+  onNavigate: (r: MainRoute) => void;
   onSwitchWorkspace?: (wsId: string) => void;
   onSwitchSpace?: (spId: string) => void;
   tree?: TreeNode[];
@@ -140,32 +141,32 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, onOpenPalette,
 
   return (
     <header className="topbar">
-      <div className="crumbs">
-        {route === 'page' && pageId && crumbChain.length > 0 ? (
-          <>
-            {/* Space — first segment of the path, doubled as a space switcher */}
-            {space && (
-              <div className="crumb-dropdown" ref={spDropRef}>
-                <button className="crumb-link" onClick={() => setSpaceDropdown((v) => !v)}>
-                  {space.name} <ChevronDown size={11} />
-                </button>
-                {spaceDropdown && spaces.length > 0 && (
-                  <div className="crumb-pop">
-                    {spaces.map((sp) => (
-                      <button key={sp.id} className={`crumb-pop-item${sp.id === space.id ? ' active' : ''}`}
-                        onClick={() => { setSpaceDropdown(false); onSwitchSpace?.(sp.id); }}>
-                        {sp.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {renderChain(crumbChain)}
-          </>
-        ) : crumbTail ? (
-          <span className="crumb-current">{crumbTail}</span>
-        ) : null}
+      {/* Module switcher — pure client-side route switch, no API call */}
+      <div className="topbar-mods" role="tablist" aria-label="模块切换">
+        <button
+          className={`mod-tab${module === 'kb' ? ' active' : ''}`}
+          title="知识库"
+          aria-label="知识库"
+          onClick={() => onNavigate('home')}
+        >
+          <BookOpen size={18} />
+        </button>
+        <button
+          className={`mod-tab${module === 'tasks' ? ' active' : ''}`}
+          title="任务"
+          aria-label="任务"
+          onClick={() => onNavigate('tasks')}
+        >
+          <CheckSquare size={18} />
+        </button>
+        <button
+          className={`mod-tab${module === 'nav' ? ' active' : ''}`}
+          title="导航"
+          aria-label="导航"
+          onClick={() => onNavigate('nav')}
+        >
+          <Compass size={18} />
+        </button>
       </div>
 
       <button className="palette-trigger" onClick={onOpenPalette}>
@@ -173,6 +174,35 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, onOpenPalette,
         <span>搜索笔记或执行命令</span>
         <kbd>⌘K</kbd>
       </button>
+
+      {module === 'kb' && (
+        <div className="crumbs">
+          {route === 'page' && pageId && crumbChain.length > 0 ? (
+            <>
+              {space && (
+                <div className="crumb-dropdown" ref={spDropRef}>
+                  <button className="crumb-link" onClick={() => setSpaceDropdown((v) => !v)}>
+                    {space.name} <ChevronDown size={11} />
+                  </button>
+                  {spaceDropdown && spaces.length > 0 && (
+                    <div className="crumb-pop">
+                      {spaces.map((sp) => (
+                        <button key={sp.id} className={`crumb-pop-item${sp.id === space.id ? ' active' : ''}`}
+                          onClick={() => { setSpaceDropdown(false); onSwitchSpace?.(sp.id); }}>
+                          {sp.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {renderChain(crumbChain)}
+            </>
+          ) : crumbTail ? (
+            <span className="crumb-current">{crumbTail}</span>
+          ) : null}
+        </div>
+      )}
 
       <div className="topbar-actions">
         {status.hasPage && <SaveIndicator state={status.saveState} />}

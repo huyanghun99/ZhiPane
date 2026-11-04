@@ -375,6 +375,7 @@ export function ShellLayout({ me }: { me: User }) {
           pageTitle={ctx.pageTitle}
           tree={treeData?.tree ?? []}
           onOpenPalette={() => setPaletteOpen(true)}
+          onNavigate={onNavigate}
         />
 
         <div className="center-and-right">
