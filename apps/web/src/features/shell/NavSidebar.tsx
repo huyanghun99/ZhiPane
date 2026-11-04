@@ -1,11 +1,27 @@
+import type { MainRoute, Space, Workspace } from '../../types';
+import { KnowledgeSidebar } from './KnowledgeSidebar';
+
 /**
  * NavSidebar — the "常用导航" module's left rail.
  *
- * Per the IA redesign the navigation dashboard is intentionally immersive:
- * the global sidebar is hidden by default so the NavView gets the full width.
- * This component exists as the module's sidebar slot but renders nothing,
- * keeping ShellLayout's composition uniform across all three modules.
+ * Originally a no-op placeholder that left the NavView (bookmark dashboard) as a
+ * full-width "neon island". It now reuses the same real knowledge-base rail so
+ * the navigation module is a genuine navigation container: users can browse
+ * workspaces / spaces / pages from the left and reach the bookmark dashboard in
+ * the content area, consistent with the knowledge-base module.
  */
-export function NavSidebar() {
-  return null;
+export function NavSidebar(props: {
+  workspace: Workspace | null;
+  workspaces: Workspace[];
+  space: Space | null;
+  spaces: Space[];
+  route: MainRoute;
+  selectedPageId: string | null;
+  onPickWorkspace: (w: Workspace) => void;
+  onPickSpace: (s: Space) => void;
+  onSelectPage: (id: string) => void;
+  onNavigate: (r: MainRoute) => void;
+  onNewNote: () => void;
+}) {
+  return <KnowledgeSidebar {...props} />;
 }

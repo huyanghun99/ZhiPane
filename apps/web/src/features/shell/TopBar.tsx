@@ -1,14 +1,15 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  BookOpen, CheckSquare, ChevronDown, ChevronRight, Compass, Download,
-  MoreHorizontal, Printer, Search, Share2, Trash2, Upload
+  BookOpen, CheckSquare, ChevronDown, ChevronRight, Compass, Download, LogOut,
+  Monitor, Moon, MoreHorizontal, Printer, Search, Settings, Share2, Sun, Trash2, Upload
 } from 'lucide-react';
 import { useEditorStatus } from './editorStatus';
 import { SaveIndicator } from './SaveIndicator';
 import { urls } from '../../nav';
 import type { ModuleKey } from './TopAppSwitcher';
-import type { MainRoute, Space, TreeNode, Workspace } from '../../types';
+import type { MainRoute, Space, TreeNode, User, Workspace } from '../../types';
+import type { ThemeMode } from '../../theme';
 
 const ROUTE_LABEL: Record<MainRoute, string> = {
   home: '首页', page: '', organize: '智能整理', search: '搜索', ask: '知识问答', map: '关系图', archive: '归档中心', settings: '设置', tasks: '任务管理', nav: '常用导航'
@@ -34,7 +35,7 @@ function buildCrumbChain(tree: TreeNode[] | undefined, pageId: string | null): T
   return chain;
 }
 
-export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpenPalette, onNavigate, onSwitchSpace, tree }: {
+export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpenPalette, onNavigate, onSwitchSpace, tree, me, theme, onToggleTheme, onLogout }: {
   workspace: Workspace | null;
   workspaces: Workspace[];
   space: Space | null;
@@ -45,6 +46,10 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
   pageTitle?: string | null;
   onOpenPalette: () => void;
   onNavigate: (r: MainRoute) => void;
+  me?: User;
+  theme?: ThemeMode;
+  onToggleTheme?: () => void;
+  onLogout?: () => void;
   onSwitchWorkspace?: (wsId: string) => void;
   onSwitchSpace?: (spId: string) => void;
   tree?: TreeNode[];
@@ -55,7 +60,9 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
   const moreRef = useRef<HTMLDivElement | null>(null);
   const [spaceDropdown, setSpaceDropdown] = useState(false);
   const [midOpen, setMidOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const spDropRef = useRef<HTMLDivElement | null>(null);
+  const userRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -67,15 +74,16 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
   }, [moreOpen]);
 
   useEffect(() => {
-    if (!spaceDropdown && !midOpen) return;
+    if (!spaceDropdown && !midOpen && !userOpen) return;
     const onClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
       if (spDropRef.current && !spDropRef.current.contains(t)) setSpaceDropdown(false);
       if (!t.closest('.crumb-dropdown')) setMidOpen(false);
+      if (userRef.current && !userRef.current.contains(t)) setUserOpen(false);
     };
     window.addEventListener('mousedown', onClick);
     return () => window.removeEventListener('mousedown', onClick);
-  }, [spaceDropdown, midOpen]);
+  }, [spaceDropdown, midOpen, userOpen]);
 
 
   const crumbTail = route === 'page' ? (pageTitle || status.pageTitle || '未命名笔记') : ROUTE_LABEL[route];

@@ -17,7 +17,7 @@ import { useAiCompletionNotify } from '../../hooks/useAiCompletionNotify';
 import { getTemplate } from '../../editor/templates';
 import { TopBar } from './TopBar';
 import { KnowledgeSidebar } from './KnowledgeSidebar';
-import { TopAppSwitcher, type ModuleKey } from './TopAppSwitcher';
+import type { ModuleKey } from './TopAppSwitcher';
 import { NavSidebar } from './NavSidebar';
 import { RightPanel } from './RightPanel';
 import { useShellContext, loadLastSpace } from './useShellContext';
@@ -220,10 +220,6 @@ export function ShellLayout({ me }: { me: User }) {
     [navigate, workspace]
   );
   const onLogout = useCallback(() => logout.mutate(), [logout]);
-  const onNavigateHome = useCallback(() => {
-    if (workspace && space) navigate(urls.spaceHome(workspace.id, space.id));
-    else navigate(urls.home());
-  }, [navigate, workspace, space]);
 
   // Tree for the command palette (instant title search within the current space).
   const { data: treeData } = useQuery<{ tree: TreeNode[] }>({
@@ -320,10 +316,7 @@ export function ShellLayout({ me }: { me: User }) {
 
   const moduleKey: ModuleKey =
     activeRoute === 'tasks' ? 'tasks' : activeRoute === 'nav' ? 'nav' : 'kb';
-  const switchModule = useCallback((m: ModuleKey) => {
-    if (m === 'kb') onNavigateHome();
-    else onNavigate(m);
-  }, [onNavigateHome, onNavigate]);
+
 
   // Redirect `/` to the resolved space (handled above); render nothing meanwhile.
   // IMPORTANT: this early return MUST come after every hook call above. Placing
@@ -337,16 +330,8 @@ export function ShellLayout({ me }: { me: User }) {
 
   return (
     <div className="app-shell-3">
-      <TopAppSwitcher
-        module={moduleKey}
-        onSwitch={switchModule}
-        me={meUser}
-        onOpenSettings={() => navigate(urls.settings())}
-        onLogout={onLogout}
-        theme={theme}
-        onToggleTheme={onToggleTheme}
-      />
-      <div className={`shell-body${moduleKey !== 'kb' ? ' no-sidebar' : ''}`}>
+
+      <div className={`shell-body${moduleKey === 'tasks' ? ' no-sidebar' : ''}`}>
         {moduleKey === 'kb' && (
           <KnowledgeSidebar
             workspace={workspace}
@@ -362,7 +347,21 @@ export function ShellLayout({ me }: { me: User }) {
             onNewNote={onNewNote}
           />
         )}
-        {moduleKey === 'nav' && <NavSidebar />}
+        {moduleKey === 'nav' && (
+          <NavSidebar
+            workspace={workspace}
+            workspaces={workspaces}
+            space={space}
+            spaces={spaces}
+            route={activeRoute}
+            selectedPageId={pageId}
+            onPickWorkspace={onPickWorkspace}
+            onPickSpace={onPickSpace}
+            onSelectPage={onSelectPage}
+            onNavigate={onNavigate}
+            onNewNote={onNewNote}
+          />
+        )}
       <div className="main-col">
         <TopBar
           workspace={workspace}

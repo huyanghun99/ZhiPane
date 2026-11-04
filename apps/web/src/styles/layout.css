@@ -364,6 +364,8 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 .palette-trigger kbd { font-size: 11px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 1px 6px; color: var(--text-2); }
 
 .topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.avatar-trigger { width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--surface-2); color: var(--text); font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background var(--duration-fast) var(--ease-out); }
+.avatar-trigger:hover { background: var(--border); }
 
 .topbar-mods { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 .mod-tab { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 0; background: transparent; color: var(--muted); border-radius: 8px; cursor: pointer; transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
