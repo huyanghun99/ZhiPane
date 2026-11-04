@@ -61,13 +61,13 @@ h1, h2, h3, h4 { margin: 0; }
 
 /* ------- Global hover transitions (no more "jumps") ------- */
 a, button,
-.tree-item, .sb-link, .sb-nav-item, .sb-menu-item, .sb-space-row, .sb-space-btn,
+.tree-item, .sb-link, .sb-nav-item, .sb-space-row, .sb-space-btn,
 .rp-outline-item, .crumb-link, .crumb-current, .more-item, .cmdk-item, .home-row,
 .wiki-tab, .topic-item, .list-row, .result-card, .src-chip, .chip, .rp-related-item,
 .stat-card, .link-btn, .icon-btn, .sb-mini, .ml-block-action, .ml-block-del,
 .block-menu-item, .bub-btn, .block-handle-grip, .upload-btn, .fav-toggle, .rp-fav,
 .rp-tab, .tag, .badge, .ml-block, .cite-badge, .home-qa, .sb-section-add, .ss-trigger,
-.ss-item, .tb-btn, .tb-menu-item, .slash-item, .callout-emoji, .callout-color,
+.slash-item, .callout-emoji, .callout-color,
 .toggle-chevron, .math-act, .embed-act, .drawio-act, .excalidraw-act, .mermaid-act,
 .media-act, .rp-ai-box, .crumb-mid, .wiki-row, .topic-pop, .graph-empty {
   transition:
