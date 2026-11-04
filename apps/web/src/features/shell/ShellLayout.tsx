@@ -253,8 +253,8 @@ export function ShellLayout({ me }: { me: User }) {
   // Tasks data for the shell-level sidebar (query keys are shared with TasksView
   // so React Query dedupes the network requests).
   const tasksWsForSidebar = workspace ?? workspaces[0] ?? null;
-  const sidebarTasksQ = useQuery({ queryKey: ['tasks-all', tasksWsForSidebar?.id], enabled: !!tasksWsForSidebar, queryFn: () => listTasks({}) });
-  const sidebarProjectsQ = useQuery({ queryKey: ['tasks-projects', tasksWsForSidebar?.id], enabled: !!tasksWsForSidebar, queryFn: listProjects });
+  const sidebarTasksQ = useQuery({ queryKey: ['tasks-all', tasksWsForSidebar?.id], enabled: !!tasksWsForSidebar && activeRoute === 'tasks', queryFn: () => listTasks({}) });
+  const sidebarProjectsQ = useQuery({ queryKey: ['tasks-projects', tasksWsForSidebar?.id], enabled: !!tasksWsForSidebar && activeRoute === 'tasks', queryFn: listProjects });
   const sidebarTasks = sidebarTasksQ.data?.tasks ?? [];
   const sidebarProjects = sidebarProjectsQ.data?.projects ?? [];
 
@@ -308,7 +308,6 @@ export function ShellLayout({ me }: { me: User }) {
         <TasksView
           workspace={tasksWs}
           filter={taskFilter}
-          onFilterChange={onTaskFilterChange}
           selectedTask={selectedTask}
           onSelectTask={onSelectTask}
           onNavigate={onNavigate}
@@ -440,6 +439,7 @@ export function ShellLayout({ me }: { me: User }) {
         tree={treeData?.tree ?? []}
         onOpenPalette={() => setPaletteOpen(true)}
         onNavigate={onNavigateWrapped}
+        onSwitchSpace={(spId) => { const sp = spaces?.find((s) => s.id === spId); if (sp) onPickSpace(sp); }}
         me={meUser}
         theme={theme}
         onToggleTheme={onToggleTheme}

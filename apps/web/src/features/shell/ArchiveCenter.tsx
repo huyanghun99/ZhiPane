@@ -95,13 +95,13 @@ export function ArchiveCenter({
   const archivedSpaces = archivedSpacesQ.data?.spaces ?? [];
 
   return (
-    <div style={{ padding: 24, maxWidth: 960, margin: '0 auto', width: '100%' }}>
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div className="archive-page">
+      <h2>
         <Archive size={20} /> 归档中心
       </h2>
       <p className="muted small">集中管理生命周期建议、已归档主题与已归档空间。归档/删除均为可恢复操作。</p>
 
-      <div style={{ display: 'flex', gap: 8, margin: '16px 0', borderBottom: '1px solid var(--border, #eee)', paddingBottom: 8 }}>
+      <div className="archive-tabs">
         <TabButton active={tab === 'suggestions'} onClick={() => setTab('suggestions')}>归档建议 ({suggestions.length})</TabButton>
         <TabButton active={tab === 'topics'} onClick={() => setTab('topics')}>已归档主题 ({archivedTopics.length})</TabButton>
         <TabButton active={tab === 'spaces'} onClick={() => setTab('spaces')}>已归档空间 ({archivedSpaces.length})</TabButton>
@@ -114,15 +114,15 @@ export function ArchiveCenter({
             <div className="muted small">暂无归档建议。运行「生命周期评估」后会在此出现。</div>
           )}
           {Object.entries(grouped).map(([type, items]) => (
-            <div key={type} style={{ marginBottom: 16 }}>
-              <h4 style={{ margin: '8px 0' }}>{SUGGESTION_LABEL[type] ?? type} ({items.length})</h4>
+            <div key={type} className="archive-group">
+              <h4>{SUGGESTION_LABEL[type] ?? type} ({items.length})</h4>
               {items.map((s) => (
-                <div key={s.id} className="archive-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--border, #eee)', borderRadius: 8, marginBottom: 8 }}>
-                  <div>
+                <div key={s.id} className="archive-row">
+                  <div className="archive-item-main">
                     <div><b>{(s.payload?.topicTitle as string) ?? '(未命名主题)'}</b></div>
                     <div className="muted small">{(s.payload?.reason as string) ?? ''}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, whiteSpace: 'nowrap' }}>
+                  <div className="archive-item-actions">
                     {(s.type === 'lifecycle_archive' || s.type === 'reactivation' || s.type === 'lifecycle_cooling') && (
                       <button className="primary sm" disabled={applySuggestion.isPending} onClick={() => applySuggestion.mutate(s)}>
                         {s.type === 'reactivation' ? '恢复' : s.type === 'lifecycle_cooling' ? '降权' : '归档'}
@@ -144,8 +144,8 @@ export function ArchiveCenter({
             <div className="muted small">没有已归档主题。</div>
           )}
           {archivedTopics.map((t) => (
-            <div key={t.id} className="archive-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', border: '1px solid var(--border, #eee)', borderRadius: 8, marginBottom: 8 }}>
-              <div>
+            <div key={t.id} className="archive-row">
+              <div className="archive-item-main">
                 <b>{t.title}</b>
                 {t.lifecycleStatus === 'archived' && <span className="tag">已删除/归档</span>}
               </div>
@@ -164,8 +164,8 @@ export function ArchiveCenter({
             <div className="muted small">没有已归档空间。</div>
           )}
           {archivedSpaces.map((s: Space) => (
-            <div key={s.id} className="archive-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', border: '1px solid var(--border, #eee)', borderRadius: 8, marginBottom: 8 }}>
-              <div>
+            <div key={s.id} className="archive-row">
+              <div className="archive-item-main">
                 <Layers size={14} /> <b>{s.name}</b>
                 {s.kind && <span className="muted small"> · {s.kind}</span>}
               </div>
@@ -177,7 +177,7 @@ export function ArchiveCenter({
         </div>
       )}
 
-      <div style={{ marginTop: 24 }}>
+      <div>
         <button className="ghost" onClick={() => onNavigate('organize')}><Trash2 size={14} /> 返回智能整理</button>
       </div>
     </div>
@@ -186,15 +186,7 @@ export function ArchiveCenter({
 
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        background: 'transparent', border: 'none', padding: '8px 12px', cursor: 'pointer',
-        color: active ? 'var(--accent, #4f46e5)' : 'var(--text, #333)',
-        borderBottom: active ? '2px solid var(--accent, #4f46e5)' : '2px solid transparent',
-        fontWeight: active ? 600 : 400
-      }}
-    >
+    <button onClick={onClick} className={'archive-tab' + (active ? ' active' : '')}>
       {children}
     </button>
   );

@@ -166,12 +166,20 @@ export function TopBar({ space, spaces, route, pageId, pageTitle, module, onOpen
           </div>
           {route === 'page' && pageId && crumbChain.length > 0 ? (
             renderChain(crumbChain)
-          ) : crumbTail && crumbTail !== '首页' ? (
+          ) : route !== 'home' && crumbTail ? (
             <>
               <ChevronRight size={13} className="crumb-sep" />
               <span className="crumb-current">{crumbTail}</span>
             </>
           ) : null}
+        </div>
+      )}
+
+      {module !== 'kb' && (
+        <div className="crumbs">
+          <span className="crumb-current" style={{ fontSize: 'var(--text-sm)' }}>
+            {ROUTE_LABEL[route]}
+          </span>
         </div>
       )}
 

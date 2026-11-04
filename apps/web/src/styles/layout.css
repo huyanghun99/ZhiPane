@@ -258,7 +258,6 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 /* ------- Three-column app shell ------- */
 .app-shell-3 { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .shell-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
-.shell-body.no-sidebar { grid-template-columns: 1fr; }
 
 
 .sidebar { background: var(--bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; transition: width var(--duration-fast) var(--ease-out); }
@@ -355,7 +354,7 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 .palette-trigger span { flex: 1; text-align: left; }
 .palette-trigger kbd { font-size: 11px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 1px 6px; color: var(--text-2); }
 
-.topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
 .avatar-trigger { width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--surface-2); color: var(--text); font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background var(--duration-fast) var(--ease-out); }
 .avatar-trigger:hover { background: var(--border); }
 
@@ -796,3 +795,13 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 .sb-group-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
 .sb-group-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sb-count { font-size: 11px; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 1px 7px; }
+
+/* R3-6: header styling for the navigation module sidebar (matches .sb-brand). */
+.nav-sidebar .sb-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 14px 10px; border-bottom: 1px solid var(--border);
+}
+.nav-sidebar .sb-title {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: var(--text);
+}

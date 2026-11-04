@@ -2,23 +2,36 @@
    Tasks module (ZenithFlow-inspired green workbench)
    ============================================================ */
 
+/* R3-1: two-column body — board/canvas on the left, task detail fixed at 340px
+   on the right, pomodoro as a bottom strip. The shell-level .tasks-sidebar
+   already occupies the 280px grid column in .shell-body. */
 .tasks-view {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: var(--space-4);
   padding: var(--space-4);
   height: 100%;
   overflow: hidden;
   min-height: 0;
 }
-
 .tasks-main {
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  flex: 1;
   min-width: 0;
   min-height: 0;
+}
+.tasks-view > .right-panel {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 0;
+}
+.tasks-view > .pomo {
+  grid-column: 1 / -1;
+  grid-row: 2;
 }
 
 .tasks-canvas {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Calendar as CalendarIcon, BarChart2 as GanttIcon, Columns as KanbanIcon,
@@ -83,7 +83,6 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
   workspace: Workspace;
   onNavigate?: (route: MainRoute) => void;
   filter: TaskFilter;
-  onFilterChange: (f: TaskFilter) => void;
   selectedTask: Task | null;
   onSelectTask: (t: Task | null) => void;
 }) {
@@ -103,20 +102,14 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
   const projectsQ = useQuery({ queryKey: ['tasks-projects', workspaceId], queryFn: listProjects });
   const projects = projectsQ.data?.projects ?? [];
 
-  // All tasks are loaded once; the active sidebar filter drives every main view
-  // (kanban / calendar / gantt) so the workbench and the rail stay in sync (R2-3).
+  // All tasks are loaded once; the kanban / calendar / gantt views render the
+  // full set so every status and date stays visible (R3-2). The sidebar filter
+  // only drives the rail's own selection, not the workbench data.
   const allTasksQ = useQuery({
     queryKey: ['tasks-all', workspaceId],
     queryFn: () => listTasks({})
   });
   const allTasks = allTasksQ.data?.tasks ?? [];
-  const displayTasks = useMemo(() => {
-    if (filter === 'all') return allTasks.filter((t) => t.status !== 'done');
-    if (typeof filter === 'string' && filter.startsWith('p_')) {
-      return allTasks.filter((t) => t.projectId === filter.slice(2) && t.status !== 'done');
-    }
-    return allTasks.filter((t) => t.status === filter);
-  }, [allTasks, filter]);
 
   const invalidate = useCallback(() => {
     qc.invalidateQueries({ queryKey: ['tasks', workspaceId] });
@@ -339,7 +332,7 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
         <div className="tasks-canvas">
           {view === 'calendar' && (
             <CalendarView
-              tasks={displayTasks}
+              tasks={allTasks}
               projects={projects}
               onTaskUpdate={updateTaskHandler}
               onSelectTask={setSelectedTask}
@@ -352,7 +345,7 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
           )}
           {view === 'gantt' && (
             <GanttView
-              tasks={displayTasks}
+              tasks={allTasks}
               projects={projects}
               onSelectTask={setSelectedTask}
               rangeStart={new Date(filterStart)}
@@ -362,7 +355,7 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
           )}
           {view === 'kanban' && (
             <KanbanView
-              tasks={displayTasks}
+              tasks={allTasks}
               projects={projects}
               onTaskUpdate={updateTaskHandler}
               onSelectTask={setSelectedTask}
