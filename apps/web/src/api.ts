@@ -345,6 +345,11 @@ export function renamePage(pageId: string, title: string): Promise<{ page: PageD
   return put(`/api/pages/${pageId}`, { title });
 }
 
+/** Change a page's icon from the directory tree (same PUT channel as the editor). */
+export function updatePageIcon(pageId: string, icon: string | null): Promise<{ page: PageDetail }> {
+  return put(`/api/pages/${pageId}`, { icon });
+}
+
 /** Move / reorder a page within the tree (lightweight — see backend). */
 export function movePage(
   pageId: string,

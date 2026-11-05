@@ -21,9 +21,9 @@ import { useToast } from '../../components/Toast';
 import { useAiCompletionNotify } from '../../hooks/useAiCompletionNotify';
 import { getTemplate } from '../../editor/templates';
 import { TopBar } from './TopBar';
+import { KbToolbar } from './KbToolbar';
 import { KnowledgeSidebar } from './KnowledgeSidebar';
 import type { ModuleKey } from '../../types';
-import { NavSidebar } from './NavSidebar';
 import { RightPanel } from './RightPanel';
 import { useShellContext, loadLastSpace } from './useShellContext';
 import { HomeView } from '../home/HomeView';
@@ -431,34 +431,40 @@ export function ShellLayout({ me }: { me: User }) {
   }
 
   return (
-    <div className="app-shell-3">
+    <div className={`app-shell-3${moduleKey === 'nav' ? ' nav-module' : ''}`}>
       <TopBar
-        space={space}
-        spaces={spaces ?? []}
-        route={activeRoute}
         module={moduleKey}
-        pageId={pageId}
-        pageTitle={ctx.pageTitle}
-        tree={treeData?.tree ?? []}
+        workspace={workspace}
+        workspaces={workspaces}
+        onPickWorkspace={onPickWorkspace}
         onOpenPalette={() => setPaletteOpen(true)}
         onNavigate={onNavigateWrapped}
-        onSwitchSpace={(spId) => { const sp = spaces?.find((s) => s.id === spId); if (sp) onPickSpace(sp); }}
         me={meUser}
         theme={theme}
         onToggleTheme={onToggleTheme}
         onLogout={onLogout}
       />
 
+      {moduleKey === 'kb' && (
+        <KbToolbar
+          space={space}
+          spaces={spaces ?? []}
+          route={activeRoute}
+          pageId={pageId}
+          pageTitle={ctx.pageTitle}
+          tree={treeData?.tree ?? []}
+          onSwitchSpace={(spId) => { const sp = spaces?.find((s) => s.id === spId); if (sp) onPickSpace(sp); }}
+        />
+      )}
+
       <div className="shell-body">
         {moduleKey === 'kb' && (
           <KnowledgeSidebar
             workspace={workspace}
-            workspaces={workspaces}
             space={space}
             spaces={spaces}
             route={activeRoute}
             selectedPageId={pageId}
-            onPickWorkspace={onPickWorkspace}
             onPickSpace={onPickSpace}
             onSelectPage={onSelectPage}
             onNavigate={onNavigate}
@@ -480,9 +486,7 @@ export function ShellLayout({ me }: { me: User }) {
             selectedTaskId={selectedTaskId}
           />
         )}
-        {moduleKey === 'nav' && (
-          <NavSidebar workspace={workspace} />
-        )}
+        {/* Nav module has no shell-level sidebar; its controls live in NavView. */}
 
         <div className="main-col">
           <div className="center-and-right">

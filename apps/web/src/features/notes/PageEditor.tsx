@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { RotateCw, Star } from 'lucide-react';
+import { RotateCw } from 'lucide-react';
 import { api, post, put } from '../../api';
 import { ApiError } from '../../api';
 import { ImportModal } from '../../ImportModal';
@@ -13,17 +13,12 @@ import { useToast } from '../../components/Toast';
 import { useDialog } from '../../components/Dialog';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useEditorStatus, type SaveState } from '../shell/editorStatus';
-import { SaveIndicator } from '../shell/SaveIndicator';
+import { PageIconPicker } from '../../components/PageIconPicker';
 import { useDeletePage } from './useDeletePage';
 import { loadDraft, saveDraft, clearDraft, draftEquals, type LocalDraft } from '../../editor/draft';
 import { consumePendingScroll, scrollEditorToText } from '../../editor/scrollTo';
 import { ConflictModal } from './ConflictModal';
 import type { PageDetail, Space, TreeNode, Workspace } from '../../types';
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: '待整理', processing: '整理中', done: '已整理', processed: '已整理',
-  failed: '整理失败', skipped: '已跳过', ignored: '未开启整理'
-};
 
 /**
  * Center-column document editor (Phase 3 + Phase 4).
@@ -40,12 +35,6 @@ const STATUS_LABEL: Record<string, string> = {
  * editor re-initialises from the new seed; autosave only touches the
  * live buffer and never resets the editor.
  */
-const PAGE_EMOJIS = [
-  '📄','📝','📋','📌','📎','📁','📂','📕','📗','📘','📙','📓','📔','📒',
-  '🎯','💡','🔥','⭐','✅','❌','⚠️','📊','📈','📉','🔢','🔧','⚙️','🔨',
-  '🤖','🧠','💭','💬','🗓️','⏰','🕐','✨','🎨','🎵','🌱','🌍','🚀','💡'
-];
-
 export function PageEditor({ workspace, space, pageId, onSelectPage }: {
   workspace: Workspace;
   space: Space;
@@ -69,7 +58,7 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
   const [pageIcon, setPageIcon] = useState<string>(page?.icon ?? '');
   const pageIconRef = useRef(pageIcon);
   pageIconRef.current = pageIcon;
-  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [iconAnchor, setIconAnchor] = useState<{ x: number; y: number } | null>(null);
   const [title, setTitle] = useState('');
   const [doc, setDoc] = useState<PMNode>(emptyDoc);
   const [seed, setSeed] = useState<PMNode>(emptyDoc);
@@ -366,35 +355,47 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
     onExport: () => {},
     onImport: () => {},
     onDelete: () => {},
-    onPrint: () => {}
+    onPrint: () => {},
+    onToggleFavorite: () => {}
   });
+  const fav = page ? isFavorite(page.id) : false;
   actionsRef.current = {
     onSave: () => saveNow(),
     onShare: () => setShowShare(true),
     onExport: () => { void exportPage(); },
     onImport: () => setShowImport(true),
     onDelete: () => { void requestDelete(); },
-    onPrint: () => window.print()
+    onPrint: () => window.print(),
+    onToggleFavorite: () => {
+      if (!page) return;
+      const now = toggleFavorite(page.id);
+      toast.success(now ? '已加入收藏' : '已取消收藏');
+    }
   };
 
+  // Publish everything the always-mounted kb toolbar needs. The effect only
+  // depends on primitives so it cannot re-run on every render (see note above).
   useEffect(() => {
     setStatus({
       hasPage: !!page,
       saveState,
       pageTitle: title,
+      pageId: page?.id,
+      contentVersion: page?.contentVersion,
+      llmStatus: page?.llmProcessStatus,
+      favorite: fav,
       onSave: () => actionsRef.current.onSave(),
       onShare: () => actionsRef.current.onShare(),
       onExport: () => actionsRef.current.onExport(),
       onImport: () => actionsRef.current.onImport(),
       onDelete: () => actionsRef.current.onDelete(),
-      onPrint: () => actionsRef.current.onPrint()
+      onPrint: () => actionsRef.current.onPrint(),
+      onToggleFavorite: () => actionsRef.current.onToggleFavorite()
     });
-  }, [page?.id, title, saveState, setStatus]);
+  }, [page?.id, page?.contentVersion, page?.llmProcessStatus, title, saveState, fav, setStatus]);
 
-  // Clear the top-bar status when this editor unmounts (page switch / close).
+  // Clear the toolbar status when this editor unmounts (page switch / close).
   useEffect(() => () => setStatus({ hasPage: false, saveState: 'idle' }), [setStatus]);
-
-  const fav = page ? isFavorite(page.id) : false;
 
   if (isLoading && !page) return <EditorSkeleton />;
   if (isError) return <ErrorState message={(error as Error)?.message} onRetry={() => refetch()} />;
@@ -415,49 +416,30 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
         </div>
       )}
 
-      <div className="page-editor-head">
-        <span className="meta">
-          v{page.contentVersion} · {STATUS_LABEL[page.llmProcessStatus] ?? page.llmProcessStatus}
-        </span>
-        <span className="head-spacer" />
-        <SaveIndicator state={saveState} />
-        <button
-          className={`fav-toggle${fav ? ' on' : ''}`}
-          title={fav ? '取消收藏' : '收藏'}
-          onClick={() => {
-            const now = toggleFavorite(page.id);
-            toast.success(now ? '已加入收藏' : '已取消收藏');
-          }}
-        >
-          <Star size={16} fill={fav ? 'currentColor' : 'none'} />
-        </button>
-      </div>
+      {/* Version / LLM status / save / favourite now live in the always-mounted
+          KbToolbar, so switching pages no longer makes these controls jump. */}
       <div className="page-title-row">
         <button
           className="page-icon-btn"
           title="选择页面图标"
-          onClick={() => setShowIconPicker((v) => !v)}
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            setIconAnchor((prev) => prev ? null : { x: r.left, y: r.bottom + 4 });
+          }}
         >
           {pageIcon || '📄'}
         </button>
-        {showIconPicker && (
-          <div className="emoji-picker" contentEditable={false}>
-            {PAGE_EMOJIS.map((e) => (
-              <button
-                key={e}
-                className="emoji-item"
-                onMouseDown={(ev) => { ev.preventDefault(); setPageIcon(e); setShowIconPicker(false); setDirty(true); }}
-              >
-                {e}
-              </button>
-            ))}
-            <button
-              className="emoji-item emoji-clear"
-              onMouseDown={(ev) => { ev.preventDefault(); setPageIcon(''); setShowIconPicker(false); setDirty(true); }}
-            >
-              ✕
-            </button>
-          </div>
+        {iconAnchor && (
+          <PageIconPicker
+            anchor={iconAnchor}
+            current={pageIcon}
+            onClose={() => setIconAnchor(null)}
+            onPick={(icon) => {
+              setPageIcon(icon ?? '');
+              setIconAnchor(null);
+              setDirty(true);
+            }}
+          />
         )}
         <input
           className="title-input"

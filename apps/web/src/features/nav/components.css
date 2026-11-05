@@ -94,14 +94,22 @@
 
 .nav-controlbar {
   width: 100%; max-width: 1200px;
-  display: flex; gap: 12px; justify-content: flex-end; align-items: center;
+  display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap;
   padding: 4px 4px 14px; margin-bottom: var(--space-3);
 }
-.nav-ctrl { background: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: var(--text-2); display: flex; align-items: center; gap: 6px; transition: background 0.15s, color 0.15s; white-space: nowrap; }
+.nav-ctrl { background: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.82rem; color: var(--text-2); display: flex; align-items: center; gap: 6px; transition: background 0.15s, color 0.15s; white-space: nowrap; }
 .nav-ctrl:hover { color: var(--primary); background: var(--surface-2); }
+.nav-ctrl:disabled { opacity: .45; cursor: not-allowed; }
+.nav-ctrl:disabled:hover { color: var(--text-2); background: none; }
 .nav-ctrl.primary { background: var(--primary); color: #fff; border-color: var(--primary); padding: 7px 16px; }
 .nav-ctrl.primary:hover { background: var(--primary-hover); color: #fff; }
-.nav-ctrl-sep { width: 1px; height: 16px; background: var(--border); }
+.nav-ctrl-select {
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  color: var(--text-2); font-size: 0.82rem; font-weight: 600; padding: 7px 10px;
+  cursor: pointer; max-width: 150px;
+}
+.nav-ctrl-select:hover { border-color: var(--primary); }
+.nav-ctrl-sep { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
 
 /* Reuse the shared modal styling already present in base.css / components.css
    (.modal-overlay, .modal, .form-group, .btn-confirm, .btn-cancel). */

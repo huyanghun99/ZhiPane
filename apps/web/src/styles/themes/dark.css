@@ -34,6 +34,8 @@
 
   /* Dark-aware tints for theme-independent accents */
   --mark-bg: color-mix(in srgb, var(--warn) 45%, var(--surface-2));
+  /* Chat user bubble needs a softer green tint than --primary-soft in dark. */
+  --chat-user-bg: color-mix(in srgb, var(--primary) 16%, var(--surface));
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, .5);
@@ -69,6 +71,8 @@
     --warn: #fbbf24;
     --info: #60a5fa;
     --mark-bg: color-mix(in srgb, var(--warn) 45%, var(--surface-2));
+    /* Keep in sync with the [data-theme="dark"] block above. */
+    --chat-user-bg: color-mix(in srgb, var(--primary) 16%, var(--surface));
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, .5);

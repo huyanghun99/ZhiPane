@@ -76,8 +76,45 @@
 .list-row b { font-weight: 600; font-size: 14px; }
 .list-row .muted { margin-left: 8px; }
 
-/* ------- Search / Ask ------- */
+/* ------- Search / Ask (multi-turn chat) ------- */
 .single-pane { width: 100%; max-width: 860px; margin: 0 auto; padding: 28px 24px; min-height: 100%; box-sizing: border-box; }
+
+.chat-view { display: flex; flex-direction: column; height: 100%; min-height: 0; max-width: 860px; width: 100%; margin: 0 auto; padding: 20px 24px 16px; box-sizing: border-box; gap: 12px; }
+.chat-view .ask-head { margin-bottom: 0; flex-shrink: 0; }
+.ask-head-actions { display: flex; align-items: center; gap: 8px; }
+.chat-clear { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); padding: 5px 10px; border-radius: 999px; font-size: 12px; cursor: pointer; }
+.chat-clear:hover { background: var(--surface-2); color: var(--text-2); }
+
+.chat-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 8px 2px 4px; }
+.chat-empty { margin: auto; max-width: 460px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--text-2); }
+.chat-empty-icon { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
+.chat-empty h4 { margin: 4px 0 0; font-size: 17px; color: var(--text); }
+.chat-empty p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--muted); }
+.chat-suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+.chat-suggestions button { border: 1px solid var(--border); background: var(--surface); color: var(--text-2); padding: 7px 12px; border-radius: 999px; font-size: 12px; cursor: pointer; transition: border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
+.chat-suggestions button:hover { border-color: var(--primary); color: var(--primary); }
+
+.chat-row { display: flex; gap: 8px; align-items: flex-start; }
+.chat-row.user { justify-content: flex-end; }
+.chat-avatar { width: 26px; height: 26px; border-radius: 9px; flex-shrink: 0; display: grid; place-items: center; background: var(--surface-2); color: var(--primary); }
+.chat-bubble { max-width: min(76%, 640px); padding: 12px 15px; border-radius: 14px; font-size: 13px; line-height: 1.75; border: 1px solid var(--border); background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); overflow-wrap: anywhere; }
+.chat-bubble.user { background: var(--chat-user-bg, var(--primary-soft)); border-color: color-mix(in srgb, var(--primary) 28%, var(--border)); border-top-right-radius: 4px; }
+.chat-bubble.assistant { border-top-left-radius: 4px; }
+.chat-bubble .answer-text { margin: 0; white-space: pre-wrap; }
+.chat-retrieving { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.chat-error { margin: 0; }
+.chat-no-result { margin: 8px 0 0; }
+.chat-sources { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.chat-sources .src-card { padding: 8px 10px; }
+.chat-sources .src-title { font-size: 12px; }
+
+.chat-composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 14px; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+.chat-composer textarea { flex: 1; min-height: 24px; max-height: 140px; resize: vertical; border: 0; box-shadow: none; padding: 6px 2px; background: transparent; color: var(--text); font-size: 13px; line-height: 1.6; }
+.chat-composer textarea:focus { box-shadow: none; border: 0; }
+.chat-composer button { flex-shrink: 0; }
+.chat-stop { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: 10px; padding: 8px 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.chat-stop:hover { background: var(--surface-3); }
+.chat-hint { flex-shrink: 0; margin: 0; text-align: center; font-size: 11px; color: var(--muted); }
 .search-pane { max-width: 860px; }
 .search-bar { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; padding: 6px 8px 6px 14px; box-shadow: var(--shadow); }
 .search-bar input { border: 0; box-shadow: none; padding: 8px 4px; }
@@ -124,6 +161,10 @@ blockquote b { display: block; margin-bottom: 4px; color: var(--text); }
 button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); color: var(--ok); }
 
 .wiki-view { display: flex; flex-direction: column; height: 100%; padding: 18px 22px 24px; gap: 16px; animation: fadeIn var(--duration-normal) var(--ease-out); }
+/* GraphView as a tab: give it a real flex height and a positioning context
+   for its absolutely-positioned toolbar. */
+.wiki-graph-pane { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.wiki-graph-pane .graph-view { height: 100%; min-height: 0; position: relative; }
 .wiki-errors-banner { border: 1px solid color-mix(in srgb, var(--danger, #e5484d) 40%, var(--border)); background: color-mix(in srgb, var(--danger, #e5484d) 10%, var(--surface)); border-radius: 12px; padding: 12px 14px; }
 .wiki-errors-banner ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .wiki-errors-banner li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -258,13 +299,14 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 /* ------- Three-column app shell ------- */
 .app-shell-3 { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .shell-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
+/* Navigation has no shell-level sidebar — let the content occupy the full row. */
+.app-shell-3.nav-module .shell-body { grid-template-columns: 1fr; }
 
 
 .sidebar { background: var(--bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; transition: width var(--duration-fast) var(--ease-out); }
 
 /* ------- Collapsible sidebar (user-toggled, persisted in localStorage) ------- */
 .sidebar.collapsed { width: 64px; }
-.sidebar.collapsed .sb-ws,
 .sidebar.collapsed .sb-nav-item span,
 .sidebar.collapsed .sb-nav-group-label,
 .sidebar.collapsed .sb-section-head,
@@ -286,23 +328,8 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 .sb-collapse-btn:hover { background: var(--surface-2); color: var(--primary); }
 .sb-collapse-btn .flip { transform: rotate(180deg); }
 
-.sb-brand { position: relative; display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px; border-bottom: 1px solid var(--border); }
-.sb-brand-mark { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--primary); color: #fff; flex-shrink: 0; }
-.sb-ws { flex: 1; min-width: 0; position: relative; }
-.sb-ws-trigger { width: 100%; justify-content: flex-start; border: 0; background: transparent; padding: 6px 8px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--text); gap: 6px; box-shadow: inset 3px 0 0 var(--brand-500); }
-.sb-ws-trigger:hover { background: var(--surface-2); }
-.sb-ws-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
-.sb-backdrop { position: fixed; inset: 0; z-index: 30; }
-.sb-menu { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 31; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-pop); padding: 6px; display: grid; gap: 2px; max-height: 60vh; overflow: auto; animation: popIn var(--duration-fast) var(--ease-out); transform-origin: top left; }
-.sb-menu-item { justify-content: flex-start; border: 0; background: transparent; color: var(--text-2); padding: 8px 10px; border-radius: 8px; font-weight: 500; gap: 8px; }
-.sb-menu-item:hover { background: var(--surface-2); }
-.sb-menu-item.active { background: var(--primary-soft); color: var(--primary); }
-.sb-menu-row { display: flex; gap: 6px; padding: 4px 4px 6px; border-top: 1px solid var(--border); margin-top: 4px; }
-.sb-mini { flex: 1; justify-content: center; border: 0; background: var(--surface-2); color: var(--text-2); padding: 6px; border-radius: 8px; font-size: 12px; gap: 5px; }
-.sb-mini:hover { background: var(--surface-3); }
-.sb-mini.danger { color: var(--danger); }
-.sb-new { display: flex; gap: 6px; padding: 6px 4px 2px; border-top: 1px solid var(--border); margin-top: 4px; }
-.sb-new input { padding: 6px 10px; font-size: 13px; }
+.sb-brand { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.sb-space-count { margin-left: auto; padding-right: 6px; font-size: 11px; color: var(--muted); }
 
 .sb-scroll { flex: 1; min-height: 0; overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 14px; }
 .sb-nav { display: flex; flex-direction: column; gap: 4px; }
@@ -340,8 +367,38 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 .sb-foot-btn:hover { background: var(--surface-2); color: var(--text-2); }
 .sb-user { font-size: 13px; color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ------- Top bar (crumbs + palette + status + more) ------- */
+/* ------- Top bar: brand + workspace picker (left), module switch + palette + user (right) ------- */
 .main-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; overflow: hidden; }
+
+.topbar-brand { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.topbar-logo { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--primary); color: #fff; flex-shrink: 0; }
+.topbar-brand-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; }
+.topbar-ws { position: relative; flex-shrink: 0; }
+.topbar-ws-trigger { display: inline-flex; align-items: center; gap: 6px; max-width: 190px; padding: 6px 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; }
+.topbar-ws-trigger:hover { background: var(--surface-3); }
+.topbar-ws-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-pop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 45; min-width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-pop); padding: 6px; display: grid; gap: 2px; animation: popIn var(--duration-fast) var(--ease-out); }
+.ws-pop-item { display: flex; align-items: center; gap: 8px; justify-content: flex-start; border: 0; background: transparent; color: var(--text-2); padding: 8px 10px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.ws-pop-item:hover { background: var(--surface-2); }
+.ws-pop-item.active { background: var(--primary-soft); color: var(--primary); }
+.ws-pop-row { display: flex; gap: 4px; padding: 4px 2px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.ws-mini { display: inline-flex; align-items: center; gap: 5px; flex: 1; border: 0; background: transparent; color: var(--muted); padding: 6px; border-radius: 7px; font-size: 12px; cursor: pointer; }
+.ws-mini:hover { background: var(--surface-2); color: var(--text-2); }
+.ws-mini.danger { color: var(--danger); }
+.ws-new { display: flex; align-items: center; gap: 4px; padding-top: 4px; }
+.ws-new input { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 12px; background: var(--surface); color: var(--text); }
+
+/* ------- Knowledge-base secondary toolbar (always mounted, compact) ------- */
+.kb-toolbar { height: 36px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.kb-toolbar .crumbs { font-size: 12px; }
+.kb-toolbar .crumb-link, .kb-toolbar .crumb-current { font-size: 12px; padding: 3px 5px; }
+.kb-toolbar-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; margin-left: auto; }
+.kb-meta { font-size: 11px; color: var(--muted); white-space: nowrap; margin-right: 6px; }
+.kb-toolbar .save-ind { font-size: 11px; margin-right: 4px; }
+.kb-tool { width: 26px; height: 26px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--muted); border-radius: 7px; cursor: pointer; transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
+.kb-tool:hover { background: var(--surface-2); color: var(--text-2); }
+.kb-tool.on { color: var(--star); }
+.kb-tool.danger:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
 .crumbs { display: flex; align-items: center; gap: 2px; font-size: var(--text-sm); flex: 1 1 auto; min-width: 0; overflow: hidden; }
 .crumb-link { border: 0; background: transparent; color: var(--muted); padding: 4px 6px; border-radius: 7px; font-weight: 400; font-size: var(--text-sm); cursor: pointer; }
 .crumb-link:hover { background: var(--surface-2); color: var(--text-2); }
@@ -473,13 +530,19 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 /* ------- Responsive ------- */
 @media (max-width: 900px) {
   .shell-body { grid-template-columns: 72px 1fr; }
-  .sb-brand-mark { margin: 0 auto; }
-  .sb-ws, .sb-nav-item span, .sb-nav-group-label, .sb-section-head, .sb-link-title, .sb-space-btn span, .sb-foot .sb-user { display: none; }
+  .app-shell-3.nav-module .shell-body { grid-template-columns: 1fr; }
+  .sb-nav-item span, .sb-nav-group-label, .sb-section-head, .sb-link-title, .sb-space-btn span, .sb-foot .sb-user { display: none; }
   .sb-nav { grid-template-columns: 1fr; }
   .sb-nav-item { justify-content: center; }
   .right-region { display: none; }
   .home-cols { grid-template-columns: 1fr; }
   .home-stats { grid-template-columns: 1fr; }
+  .topbar-brand-name { display: none; }
+  .topbar-ws-trigger { max-width: 130px; }
+  .palette-trigger { flex-basis: 180px; max-width: 180px; }
+  .palette-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kb-toolbar { padding: 0 8px; gap: 6px; }
+  .kb-meta { display: none; }
 }
 
 /* ============================================================
@@ -534,7 +597,7 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 
 /* Print (export to PDF) */
 @media print {
-  .topbar, .sidebar, .right-panel, .right-reopen, .right-region, .page-editor-head, .fav-toggle, .draft-banner, .editor-toolbar { display: none !important; }
+  .topbar, .kb-toolbar, .sidebar, .right-panel, .right-reopen, .right-region, .page-editor-head, .fav-toggle, .draft-banner, .editor-toolbar { display: none !important; }
   .app-shell-3, .main-col, .center-and-right, .center, .page-editor { display: block !important; height: auto !important; overflow: visible !important; }
   .page-editor { padding: 0 !important; max-width: none !important; }
   body { background: #fff !important; }
@@ -626,10 +689,7 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 .stale-updated-btn { border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); color: var(--warn); }
 .stale-updated-btn:hover { background: color-mix(in srgb, var(--warn) 16%, transparent); }
 
-/* Phase B3: Space-kind grouping in the sidebar + kind selector in new-space dialog. */
-.sb-space-group { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
-.sb-section-subhead { padding: 6px 10px 2px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.sb-kind-select { margin: 6px 10px 2px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px; width: calc(100% - 20px); }
+/* Space list is flat now; the kind grouping + two-row create form were removed. */
 
 /* Phase C2.2 (U8): let deep breadcrumb chains scroll horizontally instead of clipping. */
 .crumbs { overflow-x: auto; scrollbar-width: none; }
@@ -651,20 +711,35 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 /* Phase 2: page header emoji is hidden by default and fades in on hover. */
 .page-title-row .page-icon-btn { opacity: 0; transition: opacity var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out); }
 .page-title-row:hover .page-icon-btn { opacity: 1; }
-.emoji-picker {
-  position: absolute; top: 100%; left: 40px; z-index: 100;
+/* Pointer-anchored picker: position:fixed is set inline from the click coords,
+   so it never depends on a positioned ancestor (the old top:100% fell to the
+   bottom of the viewport because .page-editor / .center are static). */
+.page-icon-pop {
+  z-index: 120;
   display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;
+  width: 272px; max-height: 236px; overflow-y: auto;
   padding: 8px; background: var(--surface);
   border: 1px solid var(--border); border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.15); max-height: 240px; overflow-y: auto;
+  box-shadow: var(--shadow-pop);
+  animation: popIn var(--duration-fast) var(--ease-out);
 }
 .emoji-item {
   width: 30px; height: 30px; border: 0; background: transparent;
   cursor: pointer; border-radius: 4px; font-size: 18px;
   display: flex; align-items: center; justify-content: center;
 }
-.emoji-item:hover { background: var(--bg); }
+.emoji-item:hover { background: var(--surface-2); }
+.emoji-item.active { background: var(--primary-soft); }
 .emoji-item.emoji-clear { color: var(--danger); font-size: 14px; }
+
+/* Directory-tree icon is a real button so it can be clicked without selecting
+   the whole row (the click handler stops propagation). */
+.row-icon-btn {
+  width: 20px; height: 20px; flex-shrink: 0; border: 0; background: transparent;
+  color: var(--muted); padding: 0; border-radius: 5px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.row-icon-btn:hover { background: var(--surface-2); color: var(--primary); }
 .row-icon-emoji { font-size: 14px; line-height: 1; display: inline-flex; align-items: center; width: 13px; }
 
 
@@ -780,28 +855,5 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 .archive-item-title { font-weight: 600; }
 .archive-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
-/* ===== R2-6: Navigation module shell sidebar ===== */
-.sb-engine {
-  display: flex; align-items: center; gap: 8px; width: calc(100% - 16px); margin: 0 8px 8px;
-  padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
-  background: var(--surface); color: var(--text-2); font-size: 13px; cursor: pointer; text-align: left;
-}
-.sb-engine:hover { border-color: var(--border-strong); color: var(--text); }
-.sb-group-btn {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
-  padding: 8px 10px; border: 1px solid transparent; border-radius: 8px;
-  background: transparent; color: var(--text-2); font-size: 13px; cursor: pointer; text-align: left;
-}
-.sb-group-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
-.sb-group-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sb-count { font-size: 11px; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 1px 7px; }
-
-/* R3-6: header styling for the navigation module sidebar (matches .sb-brand). */
-.nav-sidebar .sb-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 14px 10px; border-bottom: 1px solid var(--border);
-}
-.nav-sidebar .sb-title {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 14px; font-weight: 600; color: var(--text);
-}
+/* The shell-level navigation sidebar was removed; its controls now live in
+   NavView's own control bar. */

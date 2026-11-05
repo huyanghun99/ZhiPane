@@ -101,6 +101,8 @@ export function CalendarView({
   // --- drag-to-resize (bottom edge of a block) ---
   const [resizing, setResizing] = useState<{ id: string; startY: number; startH: number } | null>(null);
   const [resizeHeight, setResizeHeight] = useState(0);
+  // Highlight the day column currently under a dragged task.
+  const [dropKey, setDropKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!resizing) return;
@@ -126,9 +128,22 @@ export function CalendarView({
     };
   }, [resizing, resizeHeight, tasks, onTaskUpdate]);
 
-  const handleDrop = (e: React.DragEvent, day: Date, hour?: number) => {
+  // Declare the drop effect explicitly: with `effectAllowed = 'move'` on the
+  // source, a drop zone that only calls preventDefault() may still be rejected.
+  const allowDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const taskId = e.dataTransfer.getData('taskId');
+    e.dataTransfer.dropEffect = e.ctrlKey || e.metaKey ? 'copy' : 'move';
+  };
+
+  /**
+   * `fromDayColumn` handles drops on .cal-day-col, which sits in an absolutely
+   * positioned overlay above .cal-slot and therefore intercepts drag events.
+   * Its height spans the whole 24h timeline, so map clientY proportionally
+   * instead of treating pixels as minutes.
+   */
+  const handleDrop = (e: React.DragEvent, day: Date, hour?: number, fromDayColumn = false) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('taskId') || e.dataTransfer.getData('text/plain');
     if (!taskId) return;
 
     const task = tasks.find((t) => t.id === taskId);
@@ -143,7 +158,10 @@ export function CalendarView({
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       // Preserve where inside the card the user grabbed it.
       const grabOffset = Number(e.dataTransfer.getData('dragOffset') || 0);
-      const target = (hour ?? 0) * 60 + (e.clientY - rect.top) - grabOffset;
+      const withinSlot = fromDayColumn
+        ? ((e.clientY - rect.top) / (rect.height || 1)) * 1440
+        : (hour ?? 0) * 60 + (e.clientY - rect.top);
+      const target = withinSlot - grabOffset;
       const snapped = Math.max(
         0,
         Math.min(1440 - SNAP_INTERVAL, Math.round(target / SNAP_INTERVAL) * SNAP_INTERVAL)
@@ -185,8 +203,8 @@ export function CalendarView({
                 <div
                   key={`${day.toISOString()}-${hour}`}
                   className="cal-slot"
-                  onDrop={(e) => handleDrop(e, day, hour)}
-                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { setDropKey(null); handleDrop(e, day, hour); }}
+                  onDragOver={allowDrop}
                   onDoubleClick={(e) => {
                     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                     const min = Math.floor((e.clientY - rect.top) / SNAP_INTERVAL) * SNAP_INTERVAL;
@@ -211,7 +229,13 @@ export function CalendarView({
               const layout = calculateOverlap(tasks, day);
               const dayTasks = tasks.filter((t) => isPlaced(t) && isSameDay(t.startDate!, day));
               return (
-                <div key={i} className="cal-day-col">
+                <div
+                  key={i}
+                  className={`cal-day-col${dropKey === day.toISOString() ? ' is-drop-target' : ''}`}
+                  onDragOver={(e) => { allowDrop(e); setDropKey(day.toISOString()); }}
+                  onDragLeave={() => setDropKey((k) => (k === day.toISOString() ? null : k))}
+                  onDrop={(e) => { setDropKey(null); handleDrop(e, day, undefined, true); }}
+                >
                   {dayTasks.map((task) => {
                     const project = projects.find((p) => p.id === task.projectId);
                     const color = project?.color || 'var(--primary)';
@@ -308,9 +332,10 @@ export function CalendarView({
             return (
               <div
                 key={day.toISOString()}
-                className={`cal-month-cell${isSameMonth(day, date) ? '' : ' is-outside'}`}
-                onDrop={(e) => handleDrop(e, day)}
-                onDragOver={(e) => e.preventDefault()}
+                className={`cal-month-cell${isSameMonth(day, date) ? '' : ' is-outside'}${dropKey === day.toISOString() ? ' is-drop-target' : ''}`}
+                onDrop={(e) => { setDropKey(null); handleDrop(e, day); }}
+                onDragOver={(e) => { allowDrop(e); setDropKey(day.toISOString()); }}
+                onDragLeave={() => setDropKey((k) => (k === day.toISOString() ? null : k))}
                 onDoubleClick={() =>
                   onAddTask('新任务', {
                     status: 'scheduled',

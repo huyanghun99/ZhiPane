@@ -52,9 +52,14 @@ export function KanbanView({
     });
   };
 
+  const allowDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
   const handleDrop = (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
-    const taskId = e.dataTransfer.getData('taskId');
+    const taskId = e.dataTransfer.getData('taskId') || e.dataTransfer.getData('text/plain');
     if (!taskId) return;
     // Dropping into "done" also fills the progress meter.
     onTaskUpdate(taskId, status === 'done' ? { status, progress: 100 } : { status });
@@ -76,7 +81,7 @@ export function KanbanView({
                 key={col.id}
                 className="kanban-col is-collapsed"
                 onDrop={(e) => handleDrop(e, col.id)}
-                onDragOver={(e) => e.preventDefault()}
+                onDragOver={allowDrop}
               >
                 <div className="kanban-col-rail">
                   <button className="icon-btn" title="展开列" onClick={() => toggleCollapse(col.id)}>
@@ -97,7 +102,7 @@ export function KanbanView({
               key={col.id}
               className="kanban-col"
               onDrop={(e) => handleDrop(e, col.id)}
-              onDragOver={(e) => e.preventDefault()}
+              onDragOver={allowDrop}
             >
               <div className="kanban-col-head">
                 <div className="kanban-col-head-left">

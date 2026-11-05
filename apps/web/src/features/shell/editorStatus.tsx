@@ -10,16 +10,28 @@ import { createContext, useContext, useMemo, useState } from 'react';
  */
 export type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error' | 'conflict';
 
+/** Human-readable LLM processing state, shared by the editor and the kb toolbar. */
+export const LLM_STATUS_LABEL: Record<string, string> = {
+  pending: '待整理', processing: '整理中', done: '已整理', processed: '已整理',
+  failed: '整理失败', skipped: '已跳过', ignored: '未整理'
+};
+
 export interface EditorStatus {
   hasPage: boolean;
   saveState: SaveState;
   pageTitle?: string;
+  /** Extra read-only page info consumed by the kb toolbar. */
+  pageId?: string;
+  contentVersion?: number;
+  llmStatus?: string;
+  favorite?: boolean;
   onSave?: () => void;
   onShare?: () => void;
   onExport?: () => void;
   onImport?: () => void;
   onDelete?: () => void;
   onPrint?: () => void;
+  onToggleFavorite?: () => void;
 }
 
 const EMPTY: EditorStatus = { hasPage: false, saveState: 'idle' };

@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Archive, BookOpen, Brain, ChevronDown, ChevronsLeft, Clock, Download, FileText, Home, LayoutGrid, Pencil, Plus, Settings, Sparkles, Star, Trash2, Wand2
+  Archive, BookOpen, Brain, ChevronsLeft, Download, FileText, Home, LayoutGrid, Pencil, Plus, Settings, Star, Trash2, Wand2
 } from 'lucide-react';
-import { api, del, patch, post, renamePage, movePage, copyPage } from '../../api';
+import { api, del, patch, post, renamePage, movePage, copyPage, updatePageIcon } from '../../api';
+import { PageIconPicker } from '../../components/PageIconPicker';
 import { useToast } from '../../components/Toast';
 import { useDialog } from '../../components/Dialog';
 import { PageActionMenu, MovePageDialog, type PageAction } from '../../components/PageActionMenu';
@@ -20,12 +21,6 @@ const STATUS_LABEL: Record<string, string> = {
   failed: '整理失败', skipped: '已跳过', ignored: '未整理'
 };
 
-// Phase B3: group Spaces by kind in the sidebar (项目 / 领域 / 资料 / 收集箱).
-const SPACE_KIND_ORDER = ['project', 'area', 'resource', 'inbox'] as const;
-const SPACE_KIND_LABEL: Record<string, string> = {
-  project: '项目', area: '领域', resource: '资料', inbox: '收集箱'
-};
-
 function flatten(tree: TreeNode[]): TreeNode[] {
   const out: TreeNode[] = [];
   const walk = (nodes: TreeNode[]) => { for (const n of nodes) { out.push(n); walk(n.children); } };
@@ -34,16 +29,14 @@ function flatten(tree: TreeNode[]): TreeNode[] {
 }
 
 export function KnowledgeSidebar({
-  workspace, workspaces, space, spaces, route, selectedPageId,
-  onPickWorkspace, onPickSpace, onSelectPage, onNavigate, onNewNote
+  workspace, space, spaces, route, selectedPageId,
+  onPickSpace, onSelectPage, onNavigate, onNewNote
 }: {
   workspace: Workspace | null;
-  workspaces: Workspace[];
   space: Space | null;
   spaces: Space[];
   route: MainRoute;
   selectedPageId: string | null;
-  onPickWorkspace: (w: Workspace) => void;
   onPickSpace: (s: Space) => void;
   onSelectPage: (id: string) => void;
   onNavigate: (r: MainRoute) => void;
@@ -65,11 +58,7 @@ export function KnowledgeSidebar({
     });
   };
 
-  const [wsOpen, setWsOpen] = useState(false);
-  const [wsName, setWsName] = useState('');
-  const [spName, setSpName] = useState('');
-  const [spKind, setSpKind] = useState<'project' | 'area' | 'resource' | 'inbox'>('area');
-  const [addingSpace, setAddingSpace] = useState(false);
+
 
   const { data: treeData, isLoading: treeLoading } = useQuery<{ tree: TreeNode[] }>({
     queryKey: ['page-tree', space?.id], enabled: !!space,
@@ -86,35 +75,27 @@ export function KnowledgeSidebar({
   });
   const inboxCount = inboxData?.inbox?.length ?? 0;
 
-  const recent = useMemo(
-    () => [...flat].sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '')).slice(0, 5),
-    [flat]
-  );
   const favPages = useMemo(() => flat.filter((n) => favorites.has(n.id)).slice(0, 8), [flat, favorites]);
 
-  // Phase B3: bucket Spaces into kind groups for the sidebar.
-  const groupedSpaces = useMemo(() => {
-    const g: Record<string, Space[]> = { project: [], area: [], resource: [], inbox: [] };
-    for (const s of spaces) (g[s.kind ?? 'area'] ??= []).push(s);
-    return g;
-  }, [spaces]);
-
-  /* ---- workspace / space CRUD (no native confirm) ---- */
-  const createWs = useMutation({
-    mutationFn: () => post<{ workspace: Workspace }>('/api/workspaces', { name: wsName || '我的知识库' }),
-    onSuccess: async (r) => { setWsName(''); setWsOpen(false); await qc.invalidateQueries({ queryKey: ['workspaces'] }); onPickWorkspace(r.workspace); toast.success('已创建知识库'); }
-  });
-  const renameWs = useMutation({
-    mutationFn: (name: string) => patch(`/api/workspaces/${workspace!.id}`, { name }),
-    onSuccess: async (_r, name) => { await qc.invalidateQueries({ queryKey: ['workspaces'] }); onPickWorkspace({ ...workspace!, name }); }
-  });
-  const deleteWs = useMutation({
-    mutationFn: () => del(`/api/workspaces/${workspace!.id}`),
-    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ['workspaces'] }); onNavigate('home'); toast.success('已删除知识库'); }
-  });
+  /* ---- space CRUD (workspace CRUD moved to TopBar; no native confirm) ----
+     "+" now creates a space in one click with the backend default kind (area),
+     then opens the rename prompt — no two-row create form, no kind grouping. */
   const createSp = useMutation({
-    mutationFn: () => post<{ space: Space }>('/api/spaces', { workspaceId: workspace!.id, name: spName || '新空间', aiPrivacyPolicy: 'inherit_workspace', spaceKind: spKind }),
-    onSuccess: async (r) => { setSpName(''); setSpKind('area'); setAddingSpace(false); await qc.invalidateQueries({ queryKey: ['spaces', workspace!.id] }); onPickSpace(r.space); toast.success('已创建空间'); }
+    mutationFn: () => post<{ space: Space }>('/api/spaces', {
+      workspaceId: workspace!.id, name: '新领域', aiPrivacyPolicy: 'inherit_workspace'
+    }),
+    onSuccess: async (r) => {
+      await qc.invalidateQueries({ queryKey: ['spaces', workspace!.id] });
+      onPickSpace(r.space);
+      toast.success('已创建领域');
+      const next = await dialog.prompt({
+        title: '命名新领域', defaultValue: r.space.name, placeholder: '输入名称', confirmText: '保存'
+      });
+      if (next && next.trim() && next.trim() !== r.space.name) {
+        renameSp.mutate({ id: r.space.id, name: next.trim() });
+      }
+    },
+    onError: (e: Error) => toast.error(`创建失败：${e.message}`)
   });
   const renameSp = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => patch(`/api/spaces/${id}`, { name }),
@@ -133,23 +114,14 @@ export function KnowledgeSidebar({
     }
   });
 
-  const askRename = async (kind: 'ws' | 'sp', cur: { id: string; name: string }) => {
+  const askRename = async (cur: { id: string; name: string }) => {
     const next = await dialog.prompt({
-      title: kind === 'ws' ? '重命名知识库' : '重命名空间',
+      title: '重命名空间',
       defaultValue: cur.name,
       placeholder: '输入新名称',
       confirmText: '保存'
     });
-    if (next && next !== cur.name) {
-      if (kind === 'ws') renameWs.mutate(next);
-      else renameSp.mutate({ id: cur.id, name: next });
-    }
-  };
-
-  const askDeleteWs = async () => {
-    if (!workspace) return;
-    const ok = await dialog.confirm({ title: `删除知识库「${workspace.name}」？`, message: '其中所有空间与笔记都会被删除，此操作不可撤销。', confirmText: '删除', danger: true });
-    if (ok) deleteWs.mutate();
+    if (next && next !== cur.name) renameSp.mutate({ id: cur.id, name: next });
   };
   const askDeleteSp = async (s: Space) => {
     const ok = await dialog.confirm({ title: `删除空间「${s.name}」？`, message: '其中所有笔记都会被删除，此操作不可撤销。', confirmText: '删除', danger: true });
@@ -170,6 +142,7 @@ export function KnowledgeSidebar({
   const [menu, setMenu] = useState<{ page: TreeNode; x: number; y: number } | null>(null);
   const [moveTarget, setMoveTarget] = useState<TreeNode | null>(null);
   const [shareTarget, setShareTarget] = useState<TreeNode | null>(null);
+  const [iconTarget, setIconTarget] = useState<{ node: TreeNode; x: number; y: number } | null>(null);
   const deletePage = useDeletePage(space, (id) => { if (id === selectedPageId) onSelectPage(''); });
 
   const findNode = useCallback((id: string): TreeNode | undefined => {
@@ -253,48 +226,17 @@ export function KnowledgeSidebar({
   const HOME_NAV = { key: 'home' as MainRoute, label: '首页', icon: <Home size={16} /> };
   const TOOL_NAV = [
     { key: 'organize' as MainRoute, label: '智能整理', icon: <Wand2 size={16} />, badge: inboxCount },
-    { key: 'ask' as MainRoute, label: '知识问答', icon: <Brain size={16} /> },
-    { key: 'map' as MainRoute, label: '关系图', icon: <LayoutGrid size={16} /> }
+    { key: 'ask' as MainRoute, label: '知识问答', icon: <Brain size={16} /> }
   ];
 
   return (
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
-      {/* Knowledge base (workspace) */}
+      {/* Brand + knowledge-base picker moved to TopBar; keep only the
+          collapse control here so the existing fold behaviour is preserved. */}
       <div className="sb-brand">
-        <div className="sb-brand-mark"><Sparkles size={18} /></div>
         <button className="sb-collapse-btn" title={collapsed ? '展开侧边栏' : '收起侧边栏'} onClick={toggleCollapsed}>
           <ChevronsLeft size={16} className={collapsed ? 'flip' : ''} />
         </button>
-        <div className="sb-ws">
-          <button className="sb-ws-trigger" onClick={() => setWsOpen((o) => !o)}>
-            <span className="sb-ws-name">{workspace?.name ?? '选择知识库'}</span>
-            <ChevronDown size={14} />
-          </button>
-          {wsOpen && (
-            <>
-              <div className="sb-backdrop" onClick={() => setWsOpen(false)} />
-              <div className="sb-menu">
-                {workspaces.map((w) => (
-                  <button key={w.id} className={`sb-menu-item${workspace?.id === w.id ? ' active' : ''}`}
-                    onClick={() => { onPickWorkspace(w); setWsOpen(false); }}>
-                    <BookOpen size={14} /> {w.name}
-                  </button>
-                ))}
-                {workspace && (
-                  <div className="sb-menu-row">
-                    <button className="sb-mini" onClick={() => askRename('ws', workspace)}><Pencil size={12} /> 重命名</button>
-                    <button className="sb-mini danger" onClick={askDeleteWs}><Trash2 size={12} /> 删除</button>
-                  </div>
-                )}
-                <div className="sb-new">
-                  <input value={wsName} placeholder="新建知识库" onChange={(e) => setWsName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && createWs.mutate()} />
-                  <button className="icon-btn" onClick={() => createWs.mutate()}><Plus size={14} /></button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
       </div>
 
       <div className="sb-scroll">
@@ -314,17 +256,8 @@ export function KnowledgeSidebar({
           </div>
         </nav>
 
-        {/* Recent */}
-        {recent.length > 0 && (
-          <div className="sb-section">
-            <div className="sb-section-head"><Clock size={13} /> 最近</div>
-            {recent.map((n) => (
-              <button key={n.id} className={`sb-link${selectedPageId === n.id && route === 'page' ? ' active' : ''}`} onClick={() => onSelectPage(n.id)}>
-                <FileText size={14} /> <span className="sb-link-title">{n.title || '未命名笔记'}</span>
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Recent pages intentionally omitted here to free up vertical space;
+            the Home dashboard still shows them. */}
 
         {/* Favorites */}
         {favPages.length > 0 && (
@@ -338,42 +271,25 @@ export function KnowledgeSidebar({
           </div>
         )}
 
-        {/* Spaces */}
+        {/* Spaces — single compact list, "+" creates a domain in one click.
+            Counts sit on the section head / active row instead of a separate
+            "领域 (n)" group header (no per-space page-count API exists). */}
         <div className="sb-section">
           <div className="sb-section-head">
-            <span><LayoutGrid size={13} /> 空间</span>
-            <button className="icon-btn sb-section-add" title="新建空间" onClick={() => setAddingSpace((v) => !v)}><Plus size={13} /></button>
+            <span><LayoutGrid size={13} /> 空间 <em>{spaces.length}</em></span>
+            <button className="icon-btn sb-section-add" title="添加领域" onClick={() => createSp.mutate()}><Plus size={13} /></button>
           </div>
-          {addingSpace && (
-            <div className="sb-new">
-              <input autoFocus value={spName} placeholder="新空间名称" onChange={(e) => setSpName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && createSp.mutate()} />
-              <select className="sb-kind-select" value={spKind}
-                onChange={(e) => setSpKind(e.target.value as 'project' | 'area' | 'resource' | 'inbox')}
-                title="空间类型">
-                <option value="project">项目（有目标/期限）</option>
-                <option value="area">领域（长期维护）</option>
-                <option value="resource">资料（参考资料）</option>
-                <option value="inbox">收集箱（待分类）</option>
-              </select>
-              <button className="icon-btn" onClick={() => createSp.mutate()}><Plus size={14} /></button>
-            </div>
-          )}
-          {SPACE_KIND_ORDER.filter((k) => groupedSpaces[k].length > 0).map((k) => (
-            <div key={k} className="sb-space-group">
-              <div className="sb-section-subhead">{SPACE_KIND_LABEL[k]} ({groupedSpaces[k].length})</div>
-              {groupedSpaces[k].map((s: Space) => (
-                <div key={s.id} className={`sb-space-row${space?.id === s.id ? ' active' : ''}`}>
-                  <button className="sb-link sb-space-btn" onClick={() => { onPickSpace(s); }}>
-                    <BookOpen size={14} /> <span className="sb-link-title">{s.name}</span>
-                  </button>
-                  <div className="sb-space-actions">
-                    <button className="icon-btn" title="导出" onClick={() => exportSpace(s)}><Download size={12} /></button>
-                    <button className="icon-btn" title="重命名" onClick={() => askRename('sp', s)}><Pencil size={12} /></button>
-                    <button className="icon-btn danger" title="删除" onClick={() => askDeleteSp(s)}><Trash2 size={12} /></button>
-                  </div>
-                </div>
-              ))}
+          {spaces.map((s: Space) => (
+            <div key={s.id} className={`sb-space-row${space?.id === s.id ? ' active' : ''}`}>
+              <button className="sb-link sb-space-btn" onClick={() => onPickSpace(s)}>
+                <BookOpen size={14} /> <span className="sb-link-title">{s.name}</span>
+                {space?.id === s.id && flat.length > 0 && <span className="sb-space-count">{flat.length}</span>}
+              </button>
+              <div className="sb-space-actions">
+                <button className="icon-btn" title="导出" onClick={() => exportSpace(s)}><Download size={12} /></button>
+                <button className="icon-btn" title="重命名" onClick={() => askRename(s)}><Pencil size={12} /></button>
+                <button className="icon-btn danger" title="删除" onClick={() => askDeleteSp(s)}><Trash2 size={12} /></button>
+              </div>
             </div>
           ))}
         </div>
@@ -397,6 +313,7 @@ export function KnowledgeSidebar({
                   onContextMenu={(node, x, y) => setMenu({ page: node, x, y })}
                   onMore={(node, x, y) => setMenu({ page: node, x, y })}
                   onReorder={onReorder}
+                  onPickIcon={(node, x, y) => setIconTarget({ node, x, y })}
                 />
               </div>
             )}
@@ -437,6 +354,24 @@ export function KnowledgeSidebar({
           targetId={shareTarget.id}
           targetTitle={shareTarget.title}
           onClose={() => setShareTarget(null)}
+        />
+      )}
+      {iconTarget && (
+        <PageIconPicker
+          anchor={{ x: iconTarget.x, y: iconTarget.y }}
+          current={iconTarget.node.icon ?? undefined}
+          onClose={() => setIconTarget(null)}
+          onPick={(icon) => {
+            const { node } = iconTarget;
+            setIconTarget(null);
+            updatePageIcon(node.id, icon || null)
+              .then(async () => {
+                if (space) await qc.invalidateQueries({ queryKey: ['page-tree', space.id] });
+                qc.invalidateQueries({ queryKey: ['page-detail', node.id] });
+                toast.success('已更新页面图标');
+              })
+              .catch((e: Error) => toast.error(`图标更新失败：${e.message}`));
+          }}
         />
       )}
     </aside>

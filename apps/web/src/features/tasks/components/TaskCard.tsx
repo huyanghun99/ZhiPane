@@ -21,8 +21,11 @@ export function TaskCard({
     <div
       draggable
       onDragStart={(e) => {
+        // 'taskId' is the contract used by the calendar and kanban drop zones;
+        // text/plain is a fallback for browsers that drop custom MIME types.
         e.dataTransfer.setData('taskId', task.id);
-        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', task.id);
+        e.dataTransfer.effectAllowed = 'copyMove';
       }}
       onClick={() => onSelect(task)}
       className={[

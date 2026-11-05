@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Timer, Play, Pause, RotateCcw } from 'lucide-react';
+import { Timer, Play, Pause, RotateCcw, ChevronDown } from 'lucide-react';
 import type { FocusKind } from '../api';
 
 interface PomodoroTimerProps {
@@ -124,6 +124,7 @@ export function PomodoroTimer({ activeTaskId, onSessionComplete }: PomodoroTimer
           <div className="pomo-pop">
             <div className="pomo-pop-head">
               <Timer size={12} /> 专注番茄钟
+              <button className="pomo-collapse" title="收起" onClick={() => setOpen(false)}><ChevronDown size={14} /></button>
             </div>
 
             <div className="pomo-dial">

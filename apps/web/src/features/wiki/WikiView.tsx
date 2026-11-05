@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdaptivePolling } from '../../hooks/useAdaptivePolling';
 import { Archive, Brain, Check, Layers, Link2, Network, Pause, Pencil, Pin, PinOff, Play, Plus, RefreshCw, RotateCcw, Trash2, X, Zap } from 'lucide-react';
 import { api, post, consolidateSpace, getJob, skipPageLlm, updateTopic, archiveTopic, reactivateTopic, deleteTopic } from '../../api';
+import { GraphView } from '../../GraphView';
 import { useToast } from '../../components/Toast';
 import { useDialog } from '../../components/Dialog';
 import { EmptyState } from '../../components/EmptyState';
@@ -85,7 +86,7 @@ export function WikiView({ space, onOpenPage }: { space: Space; onOpenPage: (id:
   const qc = useQueryClient();
   const toast = useToast();
   const dialog = useDialog();
-  const [tab, setTab] = useState<'inbox' | 'suggestions' | 'topics'>('inbox');
+  const [tab, setTab] = useState<'inbox' | 'suggestions' | 'topics' | 'graph'>('inbox');
   // Phase B3.2: Topic list dimension filters (lifecycle + source).
   const [topicLifecycle, setTopicLifecycle] = useState<'active' | 'archived'>('active');
   const [topicSource, setTopicSource] = useState<'all' | 'ai' | 'user'>('all');
@@ -344,7 +345,8 @@ export function WikiView({ space, onOpenPage }: { space: Space; onOpenPage: (id:
   const TABS: { key: typeof tab; label: string; icon: React.ReactNode; count: number }[] = [
     { key: 'inbox', label: 'Inbox', icon: <Layers size={16} />, count: inbox.length },
     { key: 'suggestions', label: '建议', icon: <Brain size={16} />, count: visibleSuggestions.length },
-    { key: 'topics', label: 'Topic Center', icon: <Network size={16} />, count: topics.length }
+    { key: 'topics', label: 'Topic Center', icon: <Network size={16} />, count: topics.length },
+    { key: 'graph', label: '关系图', icon: <Layers size={16} />, count: 0 }
   ];
 
   return (
@@ -588,6 +590,14 @@ export function WikiView({ space, onOpenPage }: { space: Space; onOpenPage: (id:
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Mounted only while active: GraphView runs a rAF force layout and a
+          6s refetch, so keeping it unmounted on other tabs avoids idle work. */}
+      {tab === 'graph' && (
+        <div className="wiki-graph-pane">
+          <GraphView space={space} onOpenPage={onOpenPage} />
         </div>
       )}
 

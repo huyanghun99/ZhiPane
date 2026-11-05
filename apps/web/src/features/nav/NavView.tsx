@@ -58,7 +58,11 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
   // mutations
   const invalidate = useCallback(() => qc.invalidateQueries({ queryKey: ['nav', workspaceId] }), [qc, workspaceId]);
 
-  const createGroupMut = useMutation({ mutationFn: (title: string) => createGroup(title, groups.length), onSuccess: invalidate });
+  const createGroupMut = useMutation({
+    mutationFn: (title: string) => createGroup(title, groups.length),
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(`新增分组失败：${e.message}`)
+  });
   const updateGroupMut = useMutation({ mutationFn: ({ id, title }: { id: string; title: string }) => updateGroup(id, { title }), onSuccess: invalidate });
   const deleteGroupMut = useMutation({ mutationFn: (id: string) => deleteGroup(id), onSuccess: invalidate });
 
@@ -67,7 +71,8 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
       const g = groups.find((x) => x.id === groupId);
       return createLink(groupId, { name, url, iconChar: firstChar(name), position: g ? g.links.length : 0 });
     },
-    onSuccess: invalidate
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(`新增网址失败：${e.message}`)
   });
   const updateLinkMut = useMutation({
     mutationFn: ({ id, ...body }: { id: string; name?: string; url?: string; iconChar?: string | null }) => updateLink(id, body),
@@ -100,7 +105,11 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
   const [siteModal, setSiteModal] = useState<{ groupId: string; linkId: string | null } | null>(null);
   const [siteName, setSiteName] = useState('');
   const [siteUrl, setSiteUrl] = useState('');
-  const [groupModal, setGroupModal] = useState<string | null>(null); // null=new, id=rename
+  // Open state is separate from the editing id: using `null` for both "closed"
+  // and "new group" made openGroupModal(null) a no-op (React bails out on the
+  // same value), so the new-group dialog never rendered.
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [groupName, setGroupName] = useState('');
 
   const openSiteModal = (groupId: string, linkId: string | null) => {
@@ -122,13 +131,15 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
   };
   const openGroupModal = (id: string | null) => {
     setGroupName(id ? (groups.find((g) => g.id === id)?.title ?? '') : '');
-    setGroupModal(id);
+    setEditingGroupId(id);
+    setGroupModalOpen(true);
   };
+  const closeGroupModal = () => { setGroupModalOpen(false); setEditingGroupId(null); };
   const saveGroup = () => {
     if (!groupName.trim()) return;
-    if (groupModal) updateGroupMut.mutate({ id: groupModal, title: groupName.trim() });
+    if (editingGroupId) updateGroupMut.mutate({ id: editingGroupId, title: groupName.trim() });
     else createGroupMut.mutate(groupName.trim());
-    setGroupModal(null);
+    closeGroupModal();
   };
 
   // ----- drag & drop -----
@@ -187,33 +198,40 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
     } catch { toast.error('导入失败：文件格式错误'); }
   };
 
-  // R2-6: receive control signals from the shell-level navigation sidebar.
-  useEffect(() => {
-    const onScroll = (e: Event) => {
-      const id = (e as CustomEvent<{ groupId: string }>).detail?.groupId;
-      if (id) document.getElementById(`nav-group-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
-    const onAddGroup = () => openGroupModal(null);
-    const onAddLink = () => openSiteModal(groups[0]?.id ?? '', null);
-    const onToggleEdit = () => setEditMode((v) => !v);
-    const onEngine = () => { setEngineDraft({ name: activeEngine.name, urlTemplate: activeEngine.urlTemplate }); setEngineModal(true); };
-    window.addEventListener('nav:scroll-to-group', onScroll);
-    window.addEventListener('nav:add-group', onAddGroup);
-    window.addEventListener('nav:add-link', onAddLink);
-    window.addEventListener('nav:toggle-edit', onToggleEdit);
-    window.addEventListener('nav:engine', onEngine);
-    return () => {
-      window.removeEventListener('nav:scroll-to-group', onScroll);
-      window.removeEventListener('nav:add-group', onAddGroup);
-      window.removeEventListener('nav:add-link', onAddLink);
-      window.removeEventListener('nav:toggle-edit', onToggleEdit);
-      window.removeEventListener('nav:engine', onEngine);
-    };
-  }, [groups, openGroupModal, openSiteModal, setEditMode, activeEngine, setEngineDraft, setEngineModal]);
+  // Controls now live in NavView's own control bar and call these handlers
+  // directly — no shell-level sidebar and no CustomEvent relay.
 
   return (
     <div className="nav-view">
       <div className="nav-controlbar">
+        <select
+          className="nav-ctrl-select"
+          value=""
+          title="跳转到分组"
+          onChange={(e) => {
+            const id = e.target.value;
+            if (id) document.getElementById(`nav-group-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        >
+          <option value="">跳转分组…</option>
+          {groups.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+        </select>
+        <button className="nav-ctrl" onClick={() => { setEngineDraft({ name: activeEngine.name, urlTemplate: activeEngine.urlTemplate }); setEngineModal(true); }}>
+          <SettingsIcon size={15} /> 搜索引擎
+        </button>
+        <button className="nav-ctrl primary" onClick={() => openGroupModal(null)}><Plus size={15} /> 新增分组</button>
+        <button
+          className="nav-ctrl"
+          disabled={groups.length === 0}
+          title={groups.length === 0 ? '请先新增分组' : '新增网址到第一个分组'}
+          onClick={() => { if (groups[0]) openSiteModal(groups[0].id, null); }}
+        >
+          <Plus size={15} /> 新增网址
+        </button>
+        <button className={`nav-ctrl${editMode ? ' primary' : ''}`} onClick={() => setEditMode((v) => !v)}>
+          <Pencil size={15} /> {editMode ? '退出编辑' : '编辑模式'}
+        </button>
+        <span className="nav-ctrl-sep" />
         <button className="nav-ctrl" onClick={onExport}><Download size={16} /> 备份</button>
         <button className="nav-ctrl" onClick={() => fileRef.current?.click()}><Upload size={16} /> 恢复</button>
         <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { if (e.target.files?.[0]) onImportFile(e.target.files[0]); e.target.value = ''; }} />
@@ -323,13 +341,13 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
         </div>
       )}
       {/* group modal */}
-      {groupModal !== null && (
-        <div className="nav-modal-overlay" onClick={() => setGroupModal(null)}>
+      {groupModalOpen && (
+        <div className="nav-modal-overlay" onClick={closeGroupModal}>
           <div className="nav-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{groupModal ? '重命名分组' : '新建分组'}</h3>
+            <h3>{editingGroupId ? '重命名分组' : '新建分组'}</h3>
             <div className="nav-form-group"><label>分组名称</label><input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="分组名称" autoFocus /></div>
             <div className="nav-modal-btns">
-              <button className="nav-btn-cancel" onClick={() => setGroupModal(null)}>取消</button>
+              <button className="nav-btn-cancel" onClick={closeGroupModal}>取消</button>
               <button className="nav-btn-confirm" onClick={saveGroup}>确认</button>
             </div>
           </div>

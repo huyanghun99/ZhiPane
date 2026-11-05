@@ -1,3 +1,7 @@
+// Deprecated: the navigation module no longer renders a shell-level sidebar.
+// Its controls now live in NavView's own .nav-controlbar and call handlers
+// directly. This file is kept for reference (and is no longer imported), so the
+// CustomEvent dispatch below is intentionally unused.
 import { useQuery } from '@tanstack/react-query';
 import { Compass, Plus, Pencil, Search } from 'lucide-react';
 import type { Workspace } from '../../types';
