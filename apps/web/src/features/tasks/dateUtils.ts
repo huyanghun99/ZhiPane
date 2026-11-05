@@ -6,6 +6,8 @@
  * dependency. Weeks start on Monday, matching the original UI.
  */
 
+import type { RecurrenceUnit, Task, TaskStatus } from './api';
+
 const MS_PER_DAY = 86_400_000;
 
 export function startOfDay(date: Date | string | number): Date {
@@ -137,3 +139,58 @@ export function toIso(date: Date | string | null | undefined): string | null {
 }
 
 export const WEEK_DAYS_SHORT = ['日', '一', '二', '三', '四', '五', '六'];
+
+/**
+ * Ported from ZenithFlow's App.tsx `generateRecurrenceSeries`.
+ * When a parent task has recurrence + a start + an end date, spawn the
+ * upcoming instances (capped at 100) so the calendar/gantt show them.
+ *
+ * Kept as a pure function here (rather than inside TasksView) so the
+ * boundary behaviour can be unit-tested.
+ */
+export function generateRecurrenceSeries(
+  parent: Task,
+  unit: RecurrenceUnit,
+  start: Date,
+  recurrenceEndDate: Date
+): Partial<Task>[] {
+  const series: Partial<Task>[] = [];
+  let current = new Date(start);
+
+  const duration =
+    parent.endDate && parent.startDate
+      ? new Date(parent.endDate).getTime() - new Date(parent.startDate).getTime()
+      : (parent.estimatedDuration || 30) * 60 * 1000;
+
+  for (let i = 0; i < 100; i++) {
+    if (unit === 'day') current = addDays(current, 1);
+    else if (unit === 'week') current = addDays(current, 7);
+    else if (unit === 'month') current = addMonths(current, 1);
+    else if (unit === 'year') current = addMonths(current, 12);
+    else break;
+
+    const checkStart = startOfDay(current);
+    const checkEnd = endOfDay(recurrenceEndDate);
+    if (checkStart.getTime() > checkEnd.getTime()) break;
+
+    const nextEnd = new Date(current.getTime() + duration);
+    series.push({
+      title: parent.title,
+      notes: parent.notes,
+      status: 'scheduled' as TaskStatus,
+      projectId: parent.projectId,
+      context: parent.context,
+      startDate: current.toISOString(),
+      endDate: nextEnd.toISOString(),
+      estimatedDuration: parent.estimatedDuration,
+      isAllDay: parent.isAllDay,
+      parentTaskId: parent.id,
+      recurrenceUnit: null,
+      recurrenceInterval: null,
+      recurrenceEndDate: null,
+      tags: parent.tags ?? [],
+      priority: parent.priority
+    });
+  }
+  return series;
+}

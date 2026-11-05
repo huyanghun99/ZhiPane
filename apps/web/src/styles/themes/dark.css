@@ -55,6 +55,11 @@
     --primary-hover: #4ade80;
     --primary-soft: #064E3B;
     --primary-strong: #86efac;
+    /* Keep in sync with the [data-theme="dark"] block above — these three were
+       missing here, so auto-dark fell back to the light brand values. */
+    --brand-500: #22c55e;
+    --brand-400: #4ade80;
+    --brand-300: #86efac;
     --border: #1e293b;
     --border-strong: #334155;
     --danger: #f87171;

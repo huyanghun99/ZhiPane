@@ -6,6 +6,7 @@ import { ToastProvider } from './components/Toast';
 import { DialogProvider } from './components/Dialog';
 import { EditorStatusProvider } from './features/shell/editorStatus';
 import { initTheme } from './theme';
+// Global stylesheet only; the KaTeX JS is lazy-loaded from editor/Math.tsx.
 import 'katex/dist/katex.min.css';
 import './styles.css';
 

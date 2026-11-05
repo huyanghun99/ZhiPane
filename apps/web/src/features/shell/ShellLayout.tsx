@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, PanelRight } from 'lucide-react';
@@ -6,7 +6,12 @@ import { api, post } from '../../api';
 import { urls, routeToUrl } from '../../nav';
 import { extractText } from '../../editor/prosemirror';
 import { getTheme, cycleTheme, type ThemeMode } from '../../theme';
-import { CommandPalette } from '../../components/CommandPalette';
+// The palette pulls in pinyin-pro's dictionary (~hundreds of KB). Split it out
+// of the entry chunk and only fetch it the first time ⌘K is used — mirrors the
+// lazy pattern already used for Excalidraw / Mermaid editor blocks.
+const CommandPalette = lazy(() =>
+  import('../../components/CommandPalette').then((m) => ({ default: m.CommandPalette }))
+);
 import { ShortcutsHelp } from '../../components/ShortcutsHelp';
 import { Onboarding } from '../../components/Onboarding';
 import { EmptyState } from '../../components/EmptyState';
@@ -261,7 +266,6 @@ export function ShellLayout({ me }: { me: User }) {
   const invalidateSidebar = useCallback(() => {
     const id = tasksWsForSidebar?.id;
     if (!id) return;
-    qc.invalidateQueries({ queryKey: ['tasks', id] });
     qc.invalidateQueries({ queryKey: ['tasks-all', id] });
     qc.invalidateQueries({ queryKey: ['tasks-projects', id] });
   }, [qc, tasksWsForSidebar]);
@@ -310,7 +314,6 @@ export function ShellLayout({ me }: { me: User }) {
           filter={taskFilter}
           selectedTask={selectedTask}
           onSelectTask={onSelectTask}
-          onNavigate={onNavigate}
         />
       );
     }
@@ -511,17 +514,21 @@ export function ShellLayout({ me }: { me: User }) {
         </div>
       </div>
 
-      <CommandPalette
-        open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
-        tree={treeData?.tree ?? []}
-        onSelectPage={onSelectPage}
-        onNavigate={onNavigate}
-        onNewNote={onNewNote}
-        onRunSearch={onRunSearch}
-        workspaceId={workspace?.id ?? ''}
-        spaceId={space?.id}
-      />
+      {paletteOpen && (
+        <Suspense fallback={null}>
+          <CommandPalette
+            open
+            onClose={() => setPaletteOpen(false)}
+            tree={treeData?.tree ?? []}
+            onSelectPage={onSelectPage}
+            onNavigate={onNavigate}
+            onNewNote={onNewNote}
+            onRunSearch={onRunSearch}
+            workspaceId={workspace?.id ?? ''}
+            spaceId={space?.id}
+          />
+        </Suspense>
+      )}
 
       {newPageOpen && (
         <NewPageDialog

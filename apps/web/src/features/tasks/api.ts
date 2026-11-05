@@ -84,7 +84,7 @@ export const GTD_COLUMNS: { key: TaskStatus; label: string; hint: string }[] = [
 
 export const PRIORITY_META: Record<TaskPriority, { label: string; weight: number; color: string }> = {
   none: { label: '无', weight: 0, color: 'var(--muted)' },
-  low: { label: '低', weight: 1, color: 'var(--primary)' },
+  low: { label: '低', weight: 1, color: 'var(--info)' }, // --info is the neutral "low priority" accent (tokens.css)
   medium: { label: '中', weight: 2, color: 'var(--warn)' },
   high: { label: '高', weight: 3, color: 'var(--danger)' }
 };

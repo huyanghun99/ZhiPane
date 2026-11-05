@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Calendar as CalendarIcon, BarChart2 as GanttIcon, Columns as KanbanIcon,
   ChevronLeft, ChevronRight, CalendarDays, Plus
 } from 'lucide-react';
-import type { MainRoute, Workspace } from '../../types';
+import type { Workspace } from '../../types';
 import { useToast } from '../../components/Toast';
 import {
   GTD_COLUMNS,
-  listProjects, createProject, updateProject, deleteProject,
+  listProjects, createProject, updateProject,
   listTasks, createTask, updateTask, deleteTask, duplicateTask, logFocusSession,
   type Task, type TaskStatus, type Project,
-  type ViewMode, type CalendarMode, type FocusKind, type RecurrenceUnit
+  type ViewMode, type CalendarMode, type FocusKind
 } from './api';
 import type { TaskFilter } from './components/TasksSidebar';
 import { RightPanel } from './components/RightPanel';
@@ -21,67 +21,19 @@ import { GanttView } from './components/GanttView';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { ConfirmModal } from './components/ConfirmModal';
 import { ProjectModal } from './components/ProjectModal';
-import { addDays, addMonths, startOfDay, endOfDay, format } from './dateUtils';
+import { addDays, format, startOfDay, endOfDay, generateRecurrenceSeries } from './dateUtils';
 
-const RECURRENCE_TO_UNIT: Record<string, RecurrenceUnit> = {
-  daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year'
-};
+// Static, render-independent constants — hoisted so they are built once
+// instead of on every render.
+const GTD_STATUS_KEYS = new Set<string>(GTD_COLUMNS.map((c) => c.key));
+const NAV_ITEMS: { id: ViewMode; label: string; icon: typeof CalendarIcon }[] = [
+  { id: 'calendar', label: '日历', icon: CalendarIcon },
+  { id: 'gantt', label: '甘特图', icon: GanttIcon },
+  { id: 'kanban', label: '看板', icon: KanbanIcon }
+];
 
-/**
- * Ported from ZenithFlow's App.tsx `generateRecurrenceSeries`.
- * When a parent task has recurrence + a start + an end date, spawn the
- * upcoming instances (capped at 100) so the calendar/gantt show them.
- */
-function generateRecurrenceSeries(
-  parent: Task,
-  unit: RecurrenceUnit,
-  start: Date,
-  recurrenceEndDate: Date
-): Partial<Task>[] {
-  const series: Partial<Task>[] = [];
-  let current = new Date(start);
-
-  const duration =
-    parent.endDate && parent.startDate
-      ? new Date(parent.endDate).getTime() - new Date(parent.startDate).getTime()
-      : (parent.estimatedDuration || 30) * 60 * 1000;
-
-  for (let i = 0; i < 100; i++) {
-    if (unit === 'day') current = addDays(current, 1);
-    else if (unit === 'week') current = addDays(current, 7);
-    else if (unit === 'month') current = addMonths(current, 1);
-    else if (unit === 'year') current = addMonths(current, 12);
-    else break;
-
-    const checkStart = startOfDay(current);
-    const checkEnd = endOfDay(recurrenceEndDate);
-    if (checkStart.getTime() > checkEnd.getTime()) break;
-
-    const nextEnd = new Date(current.getTime() + duration);
-    series.push({
-      title: parent.title,
-      notes: parent.notes,
-      status: 'scheduled' as TaskStatus,
-      projectId: parent.projectId,
-      context: parent.context,
-      startDate: current.toISOString(),
-      endDate: nextEnd.toISOString(),
-      estimatedDuration: parent.estimatedDuration,
-      isAllDay: parent.isAllDay,
-      parentTaskId: parent.id,
-      recurrenceUnit: null,
-      recurrenceInterval: null,
-      recurrenceEndDate: null,
-      tags: parent.tags ?? [],
-      priority: parent.priority
-    });
-  }
-  return series;
-}
-
-export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelectTask }: {
+export function TasksView({ workspace, filter, selectedTask, onSelectTask }: {
   workspace: Workspace;
-  onNavigate?: (route: MainRoute) => void;
   filter: TaskFilter;
   selectedTask: Task | null;
   onSelectTask: (t: Task | null) => void;
@@ -112,7 +64,8 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
   const allTasks = allTasksQ.data?.tasks ?? [];
 
   const invalidate = useCallback(() => {
-    qc.invalidateQueries({ queryKey: ['tasks', workspaceId] });
+    // Only ['tasks-all', workspaceId] exists as a query; invalidating a
+    // non-existent ['tasks', workspaceId] key was a no-op.
     qc.invalidateQueries({ queryKey: ['tasks-all', workspaceId] });
   }, [qc, workspaceId]);
 
@@ -146,12 +99,6 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks-projects', workspaceId] }),
     onError: (e: Error) => toast.error(`项目更新失败：${e.message}`)
   });
-  const deleteProjectMut = useMutation({
-    mutationFn: (id: string) => deleteProject(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks-projects', workspaceId] }),
-    onError: (e: Error) => toast.error(`项目删除失败：${e.message}`)
-  });
-
   // --- task handlers ------------------------------------------------------
 
   const updateTaskHandler = useCallback((id: string, updates: Partial<Task>) => {
@@ -161,32 +108,49 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
     const merged = { ...original, ...updates } as Task;
     const isParent = !merged.parentTaskId;
 
-    if (isParent) {
-      const recurrenceChanged =
-        updates.recurrenceUnit !== undefined || updates.startDate !== undefined ||
-        updates.endDate !== undefined || updates.recurrenceEndDate !== undefined ||
-        updates.title !== undefined || updates.notes !== undefined ||
-        updates.projectId !== undefined || updates.context !== undefined ||
-        updates.estimatedDuration !== undefined || updates.tags !== undefined;
+    // Keep the original trigger set: title/notes/tags are copied onto every
+    // generated child, so those edits must rebuild the series too. Narrowing
+    // it would silently drop the child-field sync behaviour.
+    const recurrenceChanged = isParent && (
+      updates.recurrenceUnit !== undefined || updates.startDate !== undefined ||
+      updates.endDate !== undefined || updates.recurrenceEndDate !== undefined ||
+      updates.title !== undefined || updates.notes !== undefined ||
+      updates.projectId !== undefined || updates.context !== undefined ||
+      updates.estimatedDuration !== undefined || updates.tags !== undefined
+    );
 
-      updateTaskMut.mutate({ id, input: updates });
+    if (recurrenceChanged &&
+        merged.recurrenceUnit != null && merged.startDate && merged.recurrenceEndDate) {
+      const unit = merged.recurrenceUnit;
+      const start = new Date(merged.startDate);
+      const end = new Date(merged.recurrenceEndDate);
+      const childIds = allTasks.filter((t) => t.parentTaskId === id).map((t) => t.id);
+      const series = generateRecurrenceSeries(merged, unit, start, end);
 
-      if (recurrenceChanged && merged.recurrenceUnit != null && merged.startDate && merged.recurrenceEndDate) {
-        // Remove existing children then pre-generate the series.
-        const childIds = allTasks.filter((t) => t.parentTaskId === id).map((t) => t.id);
-        for (const cid of childIds) deleteTaskMut.mutate(cid);
-        const series = generateRecurrenceSeries(merged, merged.recurrenceUnit, new Date(merged.startDate), new Date(merged.recurrenceEndDate));
-        for (const s of series) createTaskMut.mutate({ parentTaskId: id, ...s });
-      }
-    } else {
-      updateTaskMut.mutate({ id, input: updates });
+      // Persist the parent first, then replace the child series sequentially.
+      // Raw API calls (instead of the mutations) avoid one cache invalidation
+      // per child — a 100-instance series used to fire ~200 refetches. One
+      // invalidate() at the end keeps the UI aligned with the server, and any
+      // failure is surfaced instead of leaving silent orphan data.
+      void (async () => {
+        try {
+          await updateTask(id, updates);
+          for (const cid of childIds) await deleteTask(cid);
+          for (const s of series) await createTask({ workspaceId, ...s });
+        } catch (e) {
+          toast.error(`循环任务序列更新失败：${(e as Error).message}`);
+        } finally {
+          invalidate();
+        }
+      })();
+      return;
     }
-  }, [allTasks, createTaskMut, deleteTaskMut, updateTaskMut]);
+
+    updateTaskMut.mutate({ id, input: updates });
+  }, [allTasks, updateTaskMut, workspaceId, invalidate, toast]);
 
   const addTask = useCallback((title: string, overrides: Partial<Task> = {}) => {
-    const status: TaskStatus = (filter as TaskStatus) in GTD_COLUMNS.reduce((a, c) => ({ ...a, [c.key]: 1 }), {})
-      ? (filter as TaskStatus)
-      : 'inbox';
+    const status: TaskStatus = GTD_STATUS_KEYS.has(filter) ? (filter as TaskStatus) : 'inbox';
     const projectId = typeof filter === 'string' && filter.startsWith('p_') ? filter.slice(2) : null;
     createTaskMut.mutate({ title, status, projectId, ...overrides });
   }, [createTaskMut, filter]);
@@ -222,16 +186,12 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
   const logSession = useCallback((input: { kind: FocusKind; durationSeconds: number; startedAt: string }) => {
     logFocusSession({ taskId: selectedTask?.id ?? null, ...input }).then(() => {
       if (selectedTask) invalidate();
-    }).catch(() => {});
-  }, [logFocusSession, selectedTask, invalidate]);
+    }).catch((e: Error) => {
+      toast.error(`专注时长记录失败：${e.message}`);
+    });
+  }, [logFocusSession, selectedTask, invalidate, toast]);
 
   // --- gantt/calendar range helpers --------------------------------------
-
-  const navItems: { id: ViewMode; label: string; icon: typeof CalendarIcon }[] = [
-    { id: 'calendar', label: '日历', icon: CalendarIcon },
-    { id: 'gantt', label: '甘特图', icon: GanttIcon },
-    { id: 'kanban', label: '看板', icon: KanbanIcon }
-  ];
 
   const handleAutoFitRange = useCallback(() => {
     const scheduled = allTasks.filter((t) => t.startDate && (t.status === 'scheduled' || t.status === 'done'));
@@ -250,7 +210,6 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
   }, [allTasks]);
 
   const selectedTaskId = selectedTask?.id ?? null;
-  const projectOf = (id: string | null) => projects.find((p) => p.id === id);
 
   // Keep selected task in sync with the latest server data.
   useEffect(() => {
@@ -283,7 +242,7 @@ export function TasksView({ workspace, onNavigate, filter, selectedTask, onSelec
       <div className="tasks-main">
         <div className="tasks-toolbar">
           <div className="tasks-viewswitch">
-            {navItems.map(({ id, label, icon: Icon }) => (
+            {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
               <button key={id} className={view === id ? 'active' : ''} onClick={() => setView(id)}>
                 <Icon size={14} /> {label}
               </button>
