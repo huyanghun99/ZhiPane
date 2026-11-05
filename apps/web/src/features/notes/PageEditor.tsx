@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RotateCw } from 'lucide-react';
-import { api, post, put, updatePageIcon } from '../../api';
+import { api, post, put, updatePageIcon, archivePage } from '../../api';
 import { ApiError } from '../../api';
 import { ImportModal } from '../../ImportModal';
 import { ShareModal } from '../../ShareModal';
@@ -265,6 +265,27 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
     if (ok) deletePage({ id: page.id, title });
   }, [page, title, dialog, deletePage]);
 
+  // Archiving is reversible: status='archived' hides the note from the tree
+  // (listPagesLight only selects 'normal'), and the Archive Center restores it.
+  const requestArchive = useCallback(async () => {
+    if (!page) return;
+    const ok = await dialog.confirm({
+      title: '归档这篇笔记？',
+      message: '归档后会从目录树中隐藏，可在「归档中心 → 已归档笔记」恢复。',
+      confirmText: '归档'
+    });
+    if (!ok) return;
+    try {
+      await archivePage(page.id);
+      qc.invalidateQueries({ queryKey: ['page-tree', space.id] });
+      qc.invalidateQueries({ queryKey: ['archived-pages'] });
+      toast.success(`已归档「${page.title || '未命名笔记'}」`);
+      onSelectPage('');
+    } catch (err) {
+      toast.error(`归档失败：${(err as Error).message}`);
+    }
+  }, [page, dialog, qc, space.id, toast, onSelectPage]);
+
   // ---- Draft recovery ----
   const recoverDraft = useCallback(() => {
     const d = pendingDraft;
@@ -355,6 +376,7 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
     onExport: () => {},
     onImport: () => {},
     onDelete: () => {},
+    onArchive: () => {},
     onPrint: () => {},
     onToggleFavorite: () => {}
   });
@@ -365,6 +387,7 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
     onExport: () => { void exportPage(); },
     onImport: () => setShowImport(true),
     onDelete: () => { void requestDelete(); },
+    onArchive: () => { void requestArchive(); },
     onPrint: () => window.print(),
     onToggleFavorite: () => {
       if (!page) return;
@@ -389,6 +412,7 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
       onExport: () => actionsRef.current.onExport(),
       onImport: () => actionsRef.current.onImport(),
       onDelete: () => actionsRef.current.onDelete(),
+      onArchive: () => actionsRef.current.onArchive(),
       onPrint: () => actionsRef.current.onPrint(),
       onToggleFavorite: () => actionsRef.current.onToggleFavorite()
     });

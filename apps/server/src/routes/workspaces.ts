@@ -51,7 +51,17 @@ workspaceRoutes.post('/', zValidator('json', createWorkspaceSchema), async (c) =
     embeddingModel: env.AI_EMBEDDING_MODEL
   }).returning();
   await db.insert(workspaceMembers).values({ workspaceId: workspace.id, userId: user.id, role: 'owner' });
-  return c.json({ workspace }, 201);
+  // Every knowledge base owns at least one space (知识库 → 空间 → 笔记).
+  // Previously a new workspace had ZERO spaces, so switching to it fell back
+  // to "/" and the root redirect bounced back to the previous workspace.
+  const [space] = await db.insert(spaces).values({
+    workspaceId: workspace.id,
+    name: '默认空间',
+    spaceKind: 'area',
+    lifecycleStatus: 'active'
+  }).returning();
+  await db.insert(spaceMembers).values({ spaceId: space.id, userId: user.id, role: 'admin' });
+  return c.json({ workspace, space }, 201);
 });
 
 workspaceRoutes.get('/:id', async (c) => {

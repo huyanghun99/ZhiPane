@@ -109,8 +109,15 @@ export function useShellContext(me: User) {
   // ids in the URL; default to the first available workspace so their views can
   // resolve their scope and fire their data queries.
   const isCtxlessRoute = location.pathname === '/archive' || location.pathname === '/settings';
+  // Context-less routes must follow the knowledge base the user actually
+  // selected, not always workspaces[0]. Re-read on every navigation since
+  // lastSpace lives outside React state.
+  const preferredWorkspaceId = useMemo(() => {
+    const last = loadLastSpace();
+    return last && workspaces.some((w) => w.id === last.workspaceId) ? last.workspaceId : undefined;
+  }, [location.key, workspaces]);
   const defaultWorkspaceId = (location.pathname === '/tasks' || isCtxlessRoute) && !parsed.workspaceId
-    ? workspaces[0]?.id
+    ? (preferredWorkspaceId ?? workspaces[0]?.id)
     : undefined;
 
   const workspaceId = parsed.workspaceId ?? pageWorkspaceId ?? resolved?.workspaceId ?? defaultWorkspaceId;
@@ -121,7 +128,10 @@ export function useShellContext(me: User) {
     enabled: !!workspaceId,
     queryFn: () => api(`/api/spaces?workspaceId=${workspaceId}`)
   });
-  const spaces = spData?.spaces ?? [];
+  // GET /spaces returns every lifecycle by contract, so filter archived ones
+  // here: they must not appear in the sidebar, space picker or switcher —
+  // only in the Archive Center's recovery list.
+  const spaces = (spData?.spaces ?? []).filter((s) => s.lifecycleStatus !== 'archived');
 
   // For context-less routes (archive/settings) that carry no space in the URL,
   // fall back to the first space of the resolved workspace so space-scoped data

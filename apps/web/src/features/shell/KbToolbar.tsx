@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronDown, ChevronRight, Download, Maximize2, MoreHorizontal, Printer, Share2, Star, Trash2, Upload
+  Archive, ChevronDown, ChevronRight, Download, Maximize2, MoreHorizontal, Printer, Share2, Star, Trash2, Upload
 } from 'lucide-react';
 import { LLM_STATUS_LABEL, useEditorStatus } from './editorStatus';
 import { SaveIndicator } from './SaveIndicator';
@@ -201,6 +201,9 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
                   </button>
                   <button className="more-item" onClick={() => { setMoreOpen(false); status.onPrint?.(); }}>
                     <Printer size={14} /> 打印 / 导出 PDF
+                  </button>
+                  <button className="more-item" onClick={() => { setMoreOpen(false); status.onArchive?.(); }}>
+                    <Archive size={14} /> 归档笔记
                   </button>
                   <div className="more-sep" />
                   <button className="more-item danger" onClick={() => { setMoreOpen(false); status.onDelete?.(); }}>

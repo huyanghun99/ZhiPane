@@ -7,6 +7,16 @@ export type Space = {
   lifecycleStatus?: 'active' | 'on_hold' | 'completed' | 'archived';
 };
 
+/** Archived note row returned by GET /api/pages/archived. */
+export type ArchivedPage = {
+  id: string;
+  title: string;
+  icon?: string | null;
+  spaceId: string;
+  spaceName: string;
+  updatedAt?: string;
+};
+
 // Lightweight page node returned by the tree / list API. Deliberately
 // EXCLUDES contentJson and textContent (see AGENTS.md perf rules).
 export type PageNode = {

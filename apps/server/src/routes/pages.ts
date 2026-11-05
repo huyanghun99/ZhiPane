@@ -30,6 +30,50 @@ pageRoutes.get('/', async (c) => {
   return c.json({ pages });
 });
 
+// Workspace-scoped list of archived notes for the Archive Center. Must be
+// registered BEFORE GET /:pageId or "archived" would be parsed as an id.
+pageRoutes.get('/archived', async (c) => {
+  const user = c.get('user');
+  const workspaceId = c.req.query('workspaceId');
+  if (!workspaceId || !/^[0-9a-f-]{36}$/i.test(workspaceId)) {
+    return c.json({ error: 'valid workspaceId is required' }, 400);
+  }
+  const rows = await db.execute(sql`
+    SELECT p.id, p.title, p.icon, p.space_id AS "spaceId", s.name AS "spaceName",
+           p.updated_at AS "updatedAt"
+    FROM pages p
+    JOIN spaces s ON s.id = p.space_id
+    JOIN space_members sm ON sm.space_id = s.id AND sm.user_id = ${user.id}
+    WHERE p.workspace_id = ${workspaceId}::uuid AND p.status = 'archived'
+    ORDER BY p.updated_at DESC
+  `);
+  return c.json({ pages: rows.rows });
+});
+
+// Reversible archiving. `page_status` already has 'archived', but no write
+// path existed — the Archive Center could only recover Topics and Spaces.
+pageRoutes.post('/:pageId/archive', async (c) => {
+  const user = c.get('user');
+  const pageId = c.req.param('pageId');
+  if (!(await canEditPage(user.id, pageId))) return c.json({ error: 'Forbidden' }, 403);
+  const [row] = await db.update(pages)
+    .set({ status: 'archived', updatedAt: sql`now()` })
+    .where(eq(pages.id, pageId)).returning({ id: pages.id });
+  if (!row) return c.json({ error: 'Not found' }, 404);
+  return c.json({ ok: true });
+});
+
+pageRoutes.post('/:pageId/unarchive', async (c) => {
+  const user = c.get('user');
+  const pageId = c.req.param('pageId');
+  if (!(await canEditPage(user.id, pageId))) return c.json({ error: 'Forbidden' }, 403);
+  const [row] = await db.update(pages)
+    .set({ status: 'normal', updatedAt: sql`now()` })
+    .where(eq(pages.id, pageId)).returning({ id: pages.id });
+  if (!row) return c.json({ error: 'Not found' }, 404);
+  return c.json({ ok: true });
+});
+
 pageRoutes.post('/', zValidator('json', createPageSchema), async (c) => {
   const user = c.get('user');
   const input = c.req.valid('json');

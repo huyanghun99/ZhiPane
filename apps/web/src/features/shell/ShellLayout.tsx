@@ -25,7 +25,7 @@ import { KbToolbar } from './KbToolbar';
 import { KnowledgeSidebar } from './KnowledgeSidebar';
 import type { ModuleKey } from '../../types';
 import { RightPanel } from './RightPanel';
-import { useShellContext, loadLastSpace } from './useShellContext';
+import { useShellContext, loadLastSpace, saveLastSpace } from './useShellContext';
 import { HomeView } from '../home/HomeView';
 import { ArchiveCenter } from './ArchiveCenter';
 import { PageEditor } from '../notes/PageEditor';
@@ -164,14 +164,27 @@ export function ShellLayout({ me }: { me: User }) {
     enabled: isRoot && !!workspaces[0] && !validLast,
     queryFn: () => api(`/api/spaces?workspaceId=${workspaces[0]!.id}`)
   });
+  // Validate that the remembered space STILL belongs to the remembered
+  // workspace. Blindly trusting it is what made workspace switching bounce
+  // back to the other knowledge base's space.
+  const { data: lastSpaces } = useQuery<{ spaces: Space[] }>({
+    queryKey: ['spaces', validLast?.workspaceId],
+    enabled: isRoot && !!validLast,
+    queryFn: () => api(`/api/spaces?workspaceId=${validLast!.workspaceId}`)
+  });
   useEffect(() => {
     if (!isRoot) return;
-    if (validLast) {
-      navigate(urls.spaceHome(validLast.workspaceId, validLast.spaceId), { replace: true });
-    } else if (workspaces[0] && defaultSpaces?.spaces?.length) {
+    if (validLast && lastSpaces) {
+      const target = lastSpaces.spaces.find((s) => s.id === validLast.spaceId) ?? lastSpaces.spaces[0];
+      if (target) {
+        navigate(urls.spaceHome(validLast.workspaceId, target.id), { replace: true });
+        return;
+      }
+    }
+    if (!validLast && workspaces[0] && defaultSpaces?.spaces?.length) {
       navigate(urls.spaceHome(workspaces[0].id, defaultSpaces.spaces[0].id), { replace: true });
     }
-  }, [isRoot, validLast, workspaces, defaultSpaces, navigate]);
+  }, [isRoot, validLast, lastSpaces, workspaces, defaultSpaces, navigate]);
 
   // Cmd/Ctrl+K opens the command palette — unless there is a live text
   // selection inside the editor, in which case Cmd+K is the "insert link"
@@ -247,11 +260,23 @@ export function ShellLayout({ me }: { me: User }) {
   const onRunSearch = useCallback((q: string) => navigate(urls.search(q, space?.id)), [navigate, space]);
   const onPickWorkspace = useCallback(
     async (w: Workspace) => {
-      const sp = await api<{ spaces: Space[] }>(`/api/spaces?workspaceId=${w.id}`);
-      if (sp.spaces?.length) navigate(urls.spaceHome(w.id, sp.spaces[0].id));
-      else navigate(urls.home());
+      let sp = await api<{ spaces: Space[] }>(`/api/spaces?workspaceId=${w.id}`);
+      // Legacy knowledge bases created before default-space provisioning can
+      // have zero spaces. Heal them on first switch instead of falling back to
+      // "/" (whose redirect would snap back to the previous workspace).
+      if (!sp.spaces?.length) {
+        await post('/api/spaces', { workspaceId: w.id, name: '默认空间', spaceKind: 'area' });
+        sp = await api<{ spaces: Space[] }>(`/api/spaces?workspaceId=${w.id}`);
+        qc.invalidateQueries({ queryKey: ['spaces', w.id] });
+      }
+      const first = sp.spaces?.[0];
+      if (!first) { toast.error('该知识库暂无可用空间'); return; }
+      // Persist BEFORE navigating: the "/" redirect and context-less routes
+      // read this, otherwise they would resolve to the previous workspace.
+      saveLastSpace({ workspaceId: w.id, spaceId: first.id });
+      navigate(urls.spaceHome(w.id, first.id));
     },
-    [navigate]
+    [navigate, qc, toast]
   );
   const onPickSpace = useCallback(
     (s: Space) => {
@@ -324,7 +349,7 @@ export function ShellLayout({ me }: { me: User }) {
 
   const renderCenter = () => {
     if (isSettings) return <SettingsView me={meUser} onLogout={onLogout} fullWidth={fullWidth} onToggleFullWidth={toggleFullWidth} />;
-    if (archiveMatch) return <ArchiveCenter space={space} workspace={workspace} onNavigate={onNavigate} />;
+    if (archiveMatch) return <ArchiveCenter space={space} workspace={workspace} workspaces={workspaces} onNavigate={onNavigate} />;
     if (tasksMatch) {
       // /tasks carries no workspaceId in the URL; fall back to the first
       // available workspace so the workbench can resolve its scope.

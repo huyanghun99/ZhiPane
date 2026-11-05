@@ -30,6 +30,7 @@ export interface EditorStatus {
   onExport?: () => void;
   onImport?: () => void;
   onDelete?: () => void;
+  onArchive?: () => void;
   onPrint?: () => void;
   onToggleFavorite?: () => void;
 }

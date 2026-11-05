@@ -26,7 +26,10 @@ spaceRoutes.get('/', async (c) => {
   if (lifecycle) clauses.push(sql`s.lifecycle_status = ${lifecycle}`);
   if (kind) clauses.push(sql`s.space_kind = ${kind}`);
   const result = await db.execute(sql`
-    SELECT s.*, sm.role
+    SELECT s.*, sm.role,
+           s.lifecycle_status AS "lifecycleStatus",
+           s.space_kind AS "kind",
+           s.workspace_id AS "workspaceId"
     FROM spaces s
     JOIN space_members sm ON sm.space_id = s.id
     WHERE ${sql.join(clauses, sql` AND `)}

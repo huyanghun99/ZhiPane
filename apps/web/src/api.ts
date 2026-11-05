@@ -1,5 +1,5 @@
 import type { StreamRagEvent, AiProfile } from '@zhipane/shared';
-import type { WikiSuggestion, PageDetail, TopicCandidate } from './types';
+import type { WikiSuggestion, PageDetail, TopicCandidate, ArchivedPage } from './types';
 
 export class ApiError extends Error {
   status: number;
@@ -283,9 +283,25 @@ export function ignoreSuggestion(id: string): Promise<{ suggestion: WikiSuggesti
 export function getArchivedTopics(spaceId: string): Promise<{ topics: unknown[] }> {
   return api(`/api/llm-wiki/topics?spaceId=${spaceId}&lifecycle=archived`);
 }
+/** Active (non-archived) Spaces of a Workspace. */
+export function listSpaces(workspaceId: string): Promise<{ spaces: Space[] }> {
+  return api(`/api/spaces?workspaceId=${workspaceId}`);
+}
 /** B3.3: list archived Spaces for a Workspace. */
 export function getArchivedSpaces(workspaceId: string): Promise<{ spaces: Space[] }> {
   return api(`/api/spaces?workspaceId=${workspaceId}&lifecycle=archived`);
+}
+
+/** Reversible note archiving (status normal <-> archived). */
+export function archivePage(pageId: string): Promise<{ ok: boolean }> {
+  return post(`/api/pages/${pageId}/archive`, {});
+}
+export function unarchivePage(pageId: string): Promise<{ ok: boolean }> {
+  return post(`/api/pages/${pageId}/unarchive`, {});
+}
+/** Archived notes of one knowledge base, for the Archive Center. */
+export function getArchivedPages(workspaceId: string): Promise<{ pages: ArchivedPage[] }> {
+  return api(`/api/pages/archived?workspaceId=${workspaceId}`);
 }
 
 /* ----------------------------------- Phase 6: closure / promotion --------- */
