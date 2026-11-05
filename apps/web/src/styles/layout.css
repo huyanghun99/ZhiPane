@@ -387,16 +387,28 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 .ws-new input { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 12px; background: var(--surface); color: var(--text); }
 
 /* ------- Knowledge-base secondary toolbar (always mounted, compact) ------- */
-.kb-toolbar { height: 36px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.kb-toolbar { height: 42px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
 .kb-toolbar .crumbs { font-size: 12px; }
 .kb-toolbar .crumb-link, .kb-toolbar .crumb-current { font-size: 12px; padding: 3px 5px; }
-.kb-toolbar-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; margin-left: auto; }
-.kb-meta { font-size: 11px; color: var(--muted); white-space: nowrap; margin-right: 6px; }
-.kb-toolbar .save-ind { font-size: 11px; margin-right: 4px; }
-.kb-tool { width: 26px; height: 26px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--muted); border-radius: 7px; cursor: pointer; transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
-.kb-tool:hover { background: var(--surface-2); color: var(--text-2); }
-.kb-tool.on { color: var(--star); }
-.kb-tool.danger:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
+.kb-toolbar-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; margin-left: auto; }
+.kb-meta { font-size: 11px; color: var(--muted); white-space: nowrap; margin-right: 4px; }
+.kb-toolbar .save-ind { font-size: 11px; margin-right: 2px; }
+.kb-tool-sep { width: 1px; height: 18px; background: var(--border-strong); margin: 0 3px; flex-shrink: 0; }
+/* Real pill buttons: visible border/background + label instead of a bare
+   14px grey icon that looked like "a dot" and was hard to hit. */
+.kb-tool {
+  height: 28px; min-width: 28px; padding: 0 8px; gap: 5px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2);
+  border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 500; line-height: 1;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+}
+.kb-tool-label { white-space: nowrap; }
+.kb-tool:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+.kb-tool:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.kb-tool.on { color: var(--star); border-color: color-mix(in srgb, var(--star) 45%, var(--border)); background: color-mix(in srgb, var(--star) 12%, var(--surface)); }
+.kb-tool.on:hover { color: var(--star); background: color-mix(in srgb, var(--star) 20%, var(--surface)); border-color: var(--star); }
+.kb-tool.danger:hover { color: var(--danger); border-color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
 .crumbs { display: flex; align-items: center; gap: 2px; font-size: var(--text-sm); flex: 1 1 auto; min-width: 0; overflow: hidden; }
 .crumb-link { border: 0; background: transparent; color: var(--muted); padding: 4px 6px; border-radius: 7px; font-weight: 400; font-size: var(--text-sm); cursor: pointer; }
 .crumb-link:hover { background: var(--surface-2); color: var(--text-2); }
@@ -525,6 +537,14 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 .link-btn { border: 0; background: transparent; color: var(--primary); padding: 2px 4px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 3px; }
 .link-btn:hover { background: var(--primary-soft); }
 
+/* Compact labels collapse to bordered icon buttons on medium/narrow screens;
+   the border keeps them recognisable as buttons (not bare dots). */
+@media (max-width: 1100px) {
+  .kb-tool-label { display: none; }
+  .kb-tool { width: 28px; padding: 0; }
+  .kb-meta { display: none; }
+}
+
 /* ------- Responsive ------- */
 @media (max-width: 900px) {
   .shell-body { grid-template-columns: 72px 1fr; }
@@ -544,7 +564,6 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
   .topbar-mods { gap: 0; }
   .mod-tab { width: 30px; height: 30px; }
   .kb-toolbar { padding: 0 8px; gap: 6px; }
-  .kb-meta { display: none; }
 }
 
 /* ============================================================

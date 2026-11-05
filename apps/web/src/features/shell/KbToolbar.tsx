@@ -157,15 +157,29 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
               {status.llmStatus ? ` · ${LLM_STATUS_LABEL[status.llmStatus] ?? status.llmStatus}` : ''}
             </span>
             <SaveIndicator state={status.saveState} />
+            <span className="kb-tool-sep" />
+            {/* Labels stay fixed-width (e.g. always "收藏", never "取消收藏")
+                so toggling favourite cannot make the row jump. */}
             <button className={`kb-tool${status.favorite ? ' on' : ''}`} title={status.favorite ? '取消收藏' : '收藏'}
-              onClick={() => status.onToggleFavorite?.()}>
+              aria-label={status.favorite ? '取消收藏' : '收藏'} onClick={() => status.onToggleFavorite?.()}>
               <Star size={14} fill={status.favorite ? 'currentColor' : 'none'} />
+              <span className="kb-tool-label">收藏</span>
             </button>
-            <button className="kb-tool" title="分享" onClick={() => status.onShare?.()}><Share2 size={14} /></button>
-            <button className="kb-tool" title="导出 Markdown" onClick={() => status.onExport?.()}><Download size={14} /></button>
-            <button className="kb-tool" title="导入 Markdown" onClick={() => status.onImport?.()}><Upload size={14} /></button>
-            <button className="kb-tool" title="打印 / 导出 PDF" onClick={() => status.onPrint?.()}><Printer size={14} /></button>
-            <button className="kb-tool danger" title="删除笔记" onClick={() => status.onDelete?.()}><Trash2 size={14} /></button>
+            <button className="kb-tool" title="分享" aria-label="分享" onClick={() => status.onShare?.()}>
+              <Share2 size={14} /><span className="kb-tool-label">分享</span>
+            </button>
+            <button className="kb-tool" title="导出 Markdown" aria-label="导出 Markdown" onClick={() => status.onExport?.()}>
+              <Download size={14} /><span className="kb-tool-label">导出</span>
+            </button>
+            <button className="kb-tool" title="导入 Markdown" aria-label="导入 Markdown" onClick={() => status.onImport?.()}>
+              <Upload size={14} /><span className="kb-tool-label">导入</span>
+            </button>
+            <button className="kb-tool" title="打印 / 导出 PDF" aria-label="打印 / 导出 PDF" onClick={() => status.onPrint?.()}>
+              <Printer size={14} /><span className="kb-tool-label">打印</span>
+            </button>
+            <button className="kb-tool danger" title="删除笔记" aria-label="删除笔记" onClick={() => status.onDelete?.()}>
+              <Trash2 size={14} /><span className="kb-tool-label">删除</span>
+            </button>
           </>
         )}
       </div>
