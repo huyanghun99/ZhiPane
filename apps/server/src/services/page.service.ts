@@ -113,6 +113,29 @@ export async function updatePage(
   const current = await repo.getPageDetail(pageId);
   if (!current) return { ok: false, reason: 'notfound' };
 
+  // --- Icon-only edit -----------------------------------------------------
+  // Changing a page icon must NOT bump contentVersion / reset the LLM state /
+  // touch updatedAt: the page tree is ordered by (position, updatedAt), so a
+  // full content update would reorder the tree and make the note "jump" in the
+  // sidebar. Persist just the icon column and leave every other field alone.
+  const iconOnly =
+    input.icon !== undefined &&
+    input.title === undefined &&
+    input.contentJson === undefined &&
+    input.textContent === undefined &&
+    input.contentVersion === undefined &&
+    input.parentPageId === undefined &&
+    input.position === undefined;
+  if (iconOnly) {
+    const [updated] = await db
+      .update(pages)
+      .set({ icon: input.icon })
+      .where(eq(pages.id, pageId))
+      .returning();
+    if (!updated) return { ok: false, reason: 'notfound' };
+    return { ok: true, page: { ...current, icon: updated.icon } };
+  }
+
   // --- Move / reorder (Phase 6) -------------------------------------------
   // Lightweight: never bumps contentVersion and never re-enqueues an LLM job,
   // so dragging a page around the tree is instant and side-effect free.
@@ -215,8 +238,18 @@ export async function getPageTree(spaceId: string): Promise<PageTreeNode[]> {
     if (!byParent.has(key)) byParent.set(key, []);
     byParent.get(key)!.push(node);
   }
+  // Sibling order must be stable: `updatedAt` changes on every edit (title,
+  // content, icon...), so using it as a tiebreaker made notes jump around in
+  // the tree after any change. Only an explicit drag (position) may reorder.
+  const stable = (a: PageTreeNode, b: PageTreeNode) =>
+    a.position - b.position ||
+    String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')) ||
+    a.id.localeCompare(b.id);
   const build = (parentId: string): PageTreeNode[] =>
-    (byParent.get(parentId) ?? []).map((n) => ({ ...n, children: build(n.id) }));
+    (byParent.get(parentId) ?? [])
+      .slice()
+      .sort(stable)
+      .map((n) => ({ ...n, children: build(n.id) }));
   return build('root');
 }
 

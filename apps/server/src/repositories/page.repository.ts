@@ -67,7 +67,9 @@ export async function listPagesLight(spaceId: string, exec: Executor = db): Prom
     .select(LIGHT_COLUMNS)
     .from(pages)
     .where(and(eq(pages.spaceId, spaceId), eq(pages.status, 'normal')))
-    .orderBy(pages.position, pages.updatedAt);
+    // Stable sibling order: updatedAt shifts on every edit and would reorder
+    // pages; only an explicit drag (position) may change the order.
+    .orderBy(pages.position, pages.createdAt);
   if (rows.length === 0) return rows;
   const parents = new Set<string>();
   for (const r of rows) if (r.parentPageId) parents.add(r.parentPageId);

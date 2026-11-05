@@ -445,18 +445,6 @@ export function ShellLayout({ me }: { me: User }) {
         onLogout={onLogout}
       />
 
-      {moduleKey === 'kb' && (
-        <KbToolbar
-          space={space}
-          spaces={spaces ?? []}
-          route={activeRoute}
-          pageId={pageId}
-          pageTitle={ctx.pageTitle}
-          tree={treeData?.tree ?? []}
-          onSwitchSpace={(spId) => { const sp = spaces?.find((s) => s.id === spId); if (sp) onPickSpace(sp); }}
-        />
-      )}
-
       <div className="shell-body">
         {moduleKey === 'kb' && (
           <KnowledgeSidebar
@@ -489,6 +477,19 @@ export function ShellLayout({ me }: { me: User }) {
         {/* Nav module has no shell-level sidebar; its controls live in NavView. */}
 
         <div className="main-col">
+          {/* Sits inside the main column so breadcrumbs start AFTER the left
+              sidebar instead of spanning the whole window edge-to-edge. */}
+          {moduleKey === 'kb' && (
+            <KbToolbar
+              space={space}
+              spaces={spaces ?? []}
+              route={activeRoute}
+              pageId={pageId}
+              pageTitle={ctx.pageTitle}
+              tree={treeData?.tree ?? []}
+              onSwitchSpace={(spId) => { const sp = spaces?.find((s) => s.id === spId); if (sp) onPickSpace(sp); }}
+            />
+          )}
           <div className="center-and-right">
             <div className="center">{renderCenter()}</div>
 

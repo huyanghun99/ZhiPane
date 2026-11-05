@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RotateCw } from 'lucide-react';
-import { api, post, put } from '../../api';
+import { api, post, put, updatePageIcon } from '../../api';
 import { ApiError } from '../../api';
 import { ImportModal } from '../../ImportModal';
 import { ShareModal } from '../../ShareModal';
@@ -56,9 +56,10 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
   const page = data?.page ?? null;
 
   const [pageIcon, setPageIcon] = useState<string>(page?.icon ?? '');
-  const pageIconRef = useRef(pageIcon);
-  pageIconRef.current = pageIcon;
   const [iconAnchor, setIconAnchor] = useState<{ x: number; y: number } | null>(null);
+
+  // Keep the local icon in sync with server data (e.g. changed from the tree).
+  useEffect(() => { setPageIcon(page?.icon ?? ''); }, [page?.id, page?.icon]);
   const [title, setTitle] = useState('');
   const [doc, setDoc] = useState<PMNode>(emptyDoc);
   const [seed, setSeed] = useState<PMNode>(emptyDoc);
@@ -145,7 +146,6 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
     if (!p) return Promise.reject(new Error('未选择页面'));
     return put<{ page: PageDetail }>(`/api/pages/${p.id}`, {
       title: titleRef.current || '未命名笔记',
-      icon: pageIconRef.current || null,
       contentJson: docRef.current,
       textContent: extractText(docRef.current),
       contentVersion: p.contentVersion,
@@ -435,9 +435,19 @@ export function PageEditor({ workspace, space, pageId, onSelectPage }: {
             current={pageIcon}
             onClose={() => setIconAnchor(null)}
             onPick={(icon) => {
-              setPageIcon(icon ?? '');
+              const next = icon ?? '';
               setIconAnchor(null);
-              setDirty(true);
+              // Persist the icon on its own lightweight path. Do NOT mark the
+              // document dirty: a full content save would bump contentVersion
+              // and updatedAt, which reorders the page tree.
+              updatePageIcon(page.id, next || null)
+                .then(async () => {
+                  setPageIcon(next);
+                  await qc.invalidateQueries({ queryKey: ['page-tree', space.id] });
+                  qc.setQueryData(['page-detail', page.id], (old: { page: PageDetail } | undefined) =>
+                    old ? { ...old, page: { ...old.page, icon: next || null } } : old);
+                })
+                .catch((e: Error) => toast.error(`图标保存失败：${e.message}`));
             }}
           />
         )}

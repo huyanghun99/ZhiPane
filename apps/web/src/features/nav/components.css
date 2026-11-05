@@ -57,22 +57,33 @@
 
 .nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; min-height: 100px; padding: 4px; }
 
+/* Bookmark tiles get a soft brand tint by default instead of flat grey;
+   hover deepens the tint. color-mix() keeps light/dark parity automatic. */
 .nav-card {
-  aspect-ratio: 1/1; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 16px;
+  aspect-ratio: 1/1;
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border)); border-radius: 16px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-decoration: none; cursor: pointer; transition: background 0.15s, transform 0.15s, border-color 0.15s; position: relative; padding: 10px; user-select: none;
+  text-decoration: none; cursor: pointer;
+  transition: background 0.15s, transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  position: relative; padding: 10px; user-select: none;
 }
 .nav-card:hover {
-  background: var(--surface-2); transform: translateY(-2px);
+  background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 .nav-text-icon {
-  width: 48px; height: 48px; background: var(--surface-2); border: 1px solid var(--border);
+  width: 48px; height: 48px;
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
   border-radius: 12px; display: flex; align-items: center; justify-content: center;
-  font-size: 1.6rem; font-weight: 700; color: var(--text-2); margin-bottom: 10px;
+  font-size: 1.6rem; font-weight: 700; color: var(--primary); margin-bottom: 10px;
+  transition: background 0.15s;
 }
-.nav-card:hover .nav-text-icon { color: var(--primary); }
-.nav-card span { font-size: 0.85rem; color: var(--text-2); font-weight: 500; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-card:hover .nav-text-icon { background: color-mix(in srgb, var(--primary) 28%, var(--surface)); }
+.nav-card span { font-size: 0.85rem; color: var(--text); font-weight: 500; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-card:hover span { color: var(--primary); }
 
 .nav-view.edit .nav-card { cursor: grab; }
@@ -88,7 +99,9 @@
 .nav-view.edit .nav-card-edit-overlay { display: block; }
 
 .nav-card.nav-add { border: 1px dashed var(--border-strong); background: transparent; box-shadow: none; }
-.nav-card.nav-add:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); }
+.nav-card.nav-add:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); box-shadow: var(--shadow-sm); }
+.nav-card.nav-add .nav-text-icon { background: transparent; border-color: var(--border-strong); color: var(--muted); }
+.nav-card.nav-add:hover .nav-text-icon { background: transparent; color: var(--primary); }
 .nav-card.nav-add svg { color: var(--muted); }
 .nav-card.nav-add:hover svg { color: var(--primary); }
 
@@ -103,12 +116,7 @@
 .nav-ctrl:disabled:hover { color: var(--text-2); background: none; }
 .nav-ctrl.primary { background: var(--primary); color: #fff; border-color: var(--primary); padding: 7px 16px; }
 .nav-ctrl.primary:hover { background: var(--primary-hover); color: #fff; }
-.nav-ctrl-select {
-  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
-  color: var(--text-2); font-size: 0.82rem; font-weight: 600; padding: 7px 10px;
-  cursor: pointer; max-width: 150px;
-}
-.nav-ctrl-select:hover { border-color: var(--primary); }
+
 .nav-ctrl-sep { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
 
 /* Reuse the shared modal styling already present in base.css / components.css

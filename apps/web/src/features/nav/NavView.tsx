@@ -203,22 +203,10 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
 
   return (
     <div className="nav-view">
+      {/* Keep only the essential actions. Search-engine setup stays on the
+          gear button inside the search box; group navigation is just scrolling
+          the page, so neither needs a dedicated control-bar button. */}
       <div className="nav-controlbar">
-        <select
-          className="nav-ctrl-select"
-          value=""
-          title="跳转到分组"
-          onChange={(e) => {
-            const id = e.target.value;
-            if (id) document.getElementById(`nav-group-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
-        >
-          <option value="">跳转分组…</option>
-          {groups.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-        </select>
-        <button className="nav-ctrl" onClick={() => { setEngineDraft({ name: activeEngine.name, urlTemplate: activeEngine.urlTemplate }); setEngineModal(true); }}>
-          <SettingsIcon size={15} /> 搜索引擎
-        </button>
         <button className="nav-ctrl primary" onClick={() => openGroupModal(null)}><Plus size={15} /> 新增分组</button>
         <button
           className="nav-ctrl"

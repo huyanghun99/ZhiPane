@@ -231,14 +231,8 @@ export function KnowledgeSidebar({
 
   return (
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
-      {/* Brand + knowledge-base picker moved to TopBar; keep only the
-          collapse control here so the existing fold behaviour is preserved. */}
-      <div className="sb-brand">
-        <button className="sb-collapse-btn" title={collapsed ? '展开侧边栏' : '收起侧边栏'} onClick={toggleCollapsed}>
-          <ChevronsLeft size={16} className={collapsed ? 'flip' : ''} />
-        </button>
-      </div>
-
+      {/* Collapse lives in the bottom foot row now, so it no longer wastes an
+          entire standalone row at the top of the sidebar. */}
       <div className="sb-scroll">
         {/* Primary navigation */}
         <nav className="sb-nav">
@@ -322,11 +316,14 @@ export function KnowledgeSidebar({
       </div>
 
       <div className="sb-foot">
-        <button className="sb-foot-btn" onClick={() => onNavigate('archive')}>
-          <Archive size={15} /> 归档中心
+        <button className="sb-foot-btn" onClick={() => onNavigate('archive')} title="归档中心">
+          <Archive size={15} /> <span>归档中心</span>
         </button>
         <button className="sb-foot-btn" onClick={() => onNavigate('settings')} title="设置">
-          <Settings size={15} /> 设置
+          <Settings size={15} /> <span>设置</span>
+        </button>
+        <button className="sb-foot-btn" title={collapsed ? '展开侧边栏' : '收起侧边栏'} onClick={toggleCollapsed}>
+          <ChevronsLeft size={15} className={collapsed ? 'flip' : ''} />
         </button>
       </div>
 
