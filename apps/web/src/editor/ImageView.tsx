@@ -1,14 +1,14 @@
 /**
- * F5: Image node view with resize handles and alignment controls.
+ * Image node view with resize handles and alignment controls.
  *
- * Replaces the default TipTap Image rendering with a NodeView that:
- *   - Shows resize handles on the corners when selected
- *   - Supports left/center/right alignment
- *   - Persists width + align as node attributes
+ * Persists width + align as node attributes. The corner handle is visible on
+ * hover (not only when the node is selected) so resizing is discoverable; a
+ * small preset bar gives the same percentage sizing as diagram blocks.
  */
 import { memo, useRef, useCallback } from 'react';
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { WIDTH_PRESETS } from './blockResize';
 
 type Align = 'left' | 'center' | 'right';
 
@@ -39,6 +39,13 @@ export const ImageView = memo(function ImageView({ node, updateAttributes, selec
     document.addEventListener('mouseup', onUp);
   }, [width, updateAttributes]);
 
+  const setPreset = (pct: number) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const full = containerRef.current?.parentElement?.offsetWidth ?? 800;
+    updateAttributes({ width: Math.round(full * pct / 100) });
+  };
+
   const setAlign = (a: Align) => {
     updateAttributes({ align: a });
   };
@@ -51,38 +58,29 @@ export const ImageView = memo(function ImageView({ node, updateAttributes, selec
       <div className="ml-image-container" ref={containerRef} style={{ width: imgWidth, position: 'relative' }}>
         <img src={src} alt={alt ?? ''} className="ml-image" draggable={false} />
 
-        {/* Resize handles — only when selected */}
+        <div className="ml-image-resize-handle br" title="拖动调整宽度" onMouseDown={startResize} />
+
         {selected && (
-          <>
-            <div className="ml-image-resize-handle br" onMouseDown={startResize} />
-            <div className="ml-image-align-bar" contentEditable={false}>
-              <button
-                type="button"
-                className={`ml-align-btn${(align ?? 'left') === 'left' ? ' active' : ''}`}
-                onMouseDown={(e) => { e.preventDefault(); setAlign('left'); }}
-                title="左对齐"
-              ><AlignLeft size={13} /></button>
-              <button
-                type="button"
-                className={`ml-align-btn${align === 'center' ? ' active' : ''}`}
-                onMouseDown={(e) => { e.preventDefault(); setAlign('center'); }}
-                title="居中"
-              ><AlignCenter size={13} /></button>
-              <button
-                type="button"
-                className={`ml-align-btn${align === 'right' ? ' active' : ''}`}
-                onMouseDown={(e) => { e.preventDefault(); setAlign('right'); }}
-                title="右对齐"
-              ><AlignRight size={13} /></button>
-              <span className="ml-align-sep" />
-              <button
-                type="button"
-                className="ml-align-btn danger"
-                onMouseDown={(e) => { e.preventDefault(); deleteNode(); }}
-                title="删除图片"
-              >✕</button>
-            </div>
-          </>
+          <div className="ml-image-align-bar" contentEditable={false}>
+            <button type="button" className={`ml-align-btn${(align ?? 'left') === 'left' ? ' active' : ''}`}
+              onMouseDown={(e) => { e.preventDefault(); setAlign('left'); }} title="左对齐"><AlignLeft size={13} /></button>
+            <button type="button" className={`ml-align-btn${align === 'center' ? ' active' : ''}`}
+              onMouseDown={(e) => { e.preventDefault(); setAlign('center'); }} title="居中"><AlignCenter size={13} /></button>
+            <button type="button" className={`ml-align-btn${align === 'right' ? ' active' : ''}`}
+              onMouseDown={(e) => { e.preventDefault(); setAlign('right'); }} title="右对齐"><AlignRight size={13} /></button>
+            <span className="ml-align-sep" />
+            {WIDTH_PRESETS.map((p) => (
+              <button key={p} type="button" className="ml-align-btn wide" title={`宽度 ${p}%`}
+                onMouseDown={setPreset(p)}>{p}%</button>
+            ))}
+            {width && (
+              <button type="button" className="ml-align-btn wide" title="恢复全宽"
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); updateAttributes({ width: null }); }}>全宽</button>
+            )}
+            <span className="ml-align-sep" />
+            <button type="button" className="ml-align-btn danger"
+              onMouseDown={(e) => { e.preventDefault(); deleteNode(); }} title="删除图片">✕</button>
+          </div>
         )}
       </div>
     </NodeViewWrapper>

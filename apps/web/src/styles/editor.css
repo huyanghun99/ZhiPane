@@ -47,7 +47,14 @@
 .editor-content ul[data-type=taskList] li { display: flex; gap: 8px; align-items: flex-start; }
 .editor-content ul[data-type=taskList] li > label { margin-top: 4px; }
 .editor-content table { border-collapse: collapse; width: 100%; margin: 8px 0; border-radius: 8px; }
-.editor-content table td, .editor-content table th { border: 1px solid var(--border-strong); padding: 8px 10px; vertical-align: top; position: relative; }
+/* Compact by default: the old 8px padding + 1.75 line-height made single-line
+   cells ~44px tall. Density is user-adjustable via the table toolbar. */
+.editor-content table td, .editor-content table th { border: 1px solid var(--border-strong); padding: 4px 8px; line-height: 1.5; vertical-align: top; position: relative; }
+.editor-content table td > p, .editor-content table th > p { margin: 0; }
+.editor-content[data-table-density="compact"] table td,
+.editor-content[data-table-density="compact"] table th { padding: 2px 6px; line-height: 1.35; }
+.editor-content[data-table-density="relaxed"] table td,
+.editor-content[data-table-density="relaxed"] table th { padding: 9px 12px; line-height: 1.75; }
 /* Pinned header: sticks to the editor scroll container (.center). The
    .tableWrapper must NOT be a scroll container (no overflow) or the sticky
    context would be clipped to it and never engage on page scroll. */
@@ -60,6 +67,25 @@
 .th-handle:hover { color: var(--text); border-color: var(--primary); }
 .th-handle:active { cursor: grabbing; }
 .th-handle svg { display: block; }
+/* Floating table toolbar (insert/delete rows & columns + row density). */
+.th-toolbar { position: fixed; z-index: 61; display: flex; align-items: center; gap: 2px; padding: 3px 5px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.16); }
+.th-toolbar button { display: inline-flex; align-items: center; gap: 1px; border: 0; background: transparent; color: var(--text-2); padding: 4px 5px; border-radius: 5px; cursor: pointer; }
+.th-toolbar button:hover { background: var(--primary-soft); color: var(--primary); }
+.th-toolbar button.danger:hover { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger); }
+.th-group-label { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); padding: 0 2px; white-space: nowrap; }
+.th-sep { width: 1px; height: 16px; background: var(--border); margin: 0 3px; }
+.th-toolbar select { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: 5px; font-size: 11px; padding: 3px 4px; cursor: pointer; }
+.th-toolbar .rotate-90 { transform: rotate(90deg); }
+
+/* Resizable block previews (Draw.io / Excalidraw). */
+.ml-block-preview { position: relative; max-width: 100%; margin: 0 auto; }
+.ml-block-preview img { display: block; width: 100%; height: auto; }
+.ml-resize-handle { position: absolute; right: 4px; bottom: 4px; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--surface); background: var(--primary); cursor: nwse-resize; opacity: 0; transition: opacity var(--duration-fast) var(--ease-out); }
+.ml-block-preview:hover .ml-resize-handle, .ml-block-preview:focus-within .ml-resize-handle { opacity: 1; }
+.ml-size-bar { position: absolute; top: 6px; right: 6px; display: flex; gap: 3px; opacity: 0; transition: opacity var(--duration-fast) var(--ease-out); }
+.ml-block-preview:hover .ml-size-bar { opacity: 1; }
+.ml-size-bar button { border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); font-size: 11px; padding: 2px 6px; border-radius: 5px; cursor: pointer; }
+.ml-size-bar button:hover { border-color: var(--primary); color: var(--primary); }
 
 /* Selected block gets a soft primary wash (editor polish). */
 .editor-content .ProseMirror-selectednode { outline: 2px solid var(--primary); border-radius: 8px; background: var(--primary-soft); }
@@ -427,7 +453,11 @@ button.primary.sm { padding: 6px 9px; font-size: 12px; }
   border-radius: 50%;
   cursor: nwse-resize;
   z-index: 5;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
+.ml-image-wrap:hover .ml-image-resize-handle,
+.ml-image-wrap.selected .ml-image-resize-handle { opacity: 1; }
 .ml-image-align-bar {
   position: absolute;
   top: -32px;
@@ -456,6 +486,7 @@ button.primary.sm { padding: 6px 9px; font-size: 12px; }
   cursor: pointer;
 }
 .ml-align-btn:hover { background: var(--bg); }
+.ml-align-btn.wide { width: auto; min-width: 30px; padding: 0 5px; font-size: 11px; white-space: nowrap; }
 .ml-align-btn.active { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
 .ml-align-btn.danger { color: var(--danger); }
 .ml-align-sep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; }

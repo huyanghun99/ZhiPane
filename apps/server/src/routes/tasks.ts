@@ -145,6 +145,14 @@ taskRoutes.post('/', zValidator('json', taskInput), async (c) => {
   const user = c.get('user');
   const workspaceId = await getUserWorkspaceId(user.id);
   const body = c.req.valid('json');
+  // A stale client-side filter (e.g. a project deleted earlier) used to send a
+  // dangling projectId and blow up with an opaque FK 500. Reject it clearly so
+  // the UI can recover instead of showing a generic "创建失败".
+  if (body.projectId) {
+    const [project] = await db.select({ id: projects.id }).from(projects)
+      .where(and(eq(projects.id, body.projectId), eq(projects.workspaceId, workspaceId))).limit(1);
+    if (!project) return c.json({ error: 'projectId does not belong to this workspace' }, 400);
+  }
   const [row] = await db
     .insert(tasks)
     .values({

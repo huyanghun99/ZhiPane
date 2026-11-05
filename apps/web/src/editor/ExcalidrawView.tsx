@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { type NodeViewProps } from '@tiptap/react';
 import { Pencil, Check } from 'lucide-react';
 import { BlockFrame } from './BlockFrame';
+import { BlockPreview } from './BlockPreview';
 import { ExcalidrawErrorBoundary } from './ExcalidrawErrorBoundary';
 import { getTheme } from '../theme';
 import { useToast } from '../components/Toast';
@@ -55,6 +56,7 @@ export const ExcalidrawView = memo(function ExcalidrawView({ node, updateAttribu
   const appState = (node.attrs.appState as object) || {};
   const files = (node.attrs.files as Record<string, unknown>) || {};
   const preview = (node.attrs.preview as string) || '';
+  const width = (node.attrs.width as number | null) ?? null;
   const [edit, setEdit] = useState(false);
   const [api, setApi] = useState<SceneAPI | null>(null);
   const saveTimer = useRef<number | undefined>(undefined);
@@ -154,13 +156,16 @@ export const ExcalidrawView = memo(function ExcalidrawView({ node, updateAttribu
 
   return (
     <BlockFrame label="白板（Excalidraw）" kind="excalidraw" id={node.attrs.id} selected={selected} onDelete={() => deleteNode?.()} actions={actions}>
-      {edit ? null : preview ? (
-        <div className="excalidraw-preview" contentEditable={false} onDoubleClick={startEdit}>
-          <img src={preview} alt="whiteboard" />
-        </div>
-      ) : (
-        <div className="excalidraw-empty" contentEditable={false} onDoubleClick={startEdit}>
-          点击「编辑」打开 Excalidraw 白板自由绘制
+      {edit ? null : (
+        <div className="excalidraw-preview">
+          <BlockPreview
+            preview={preview}
+            alt="whiteboard"
+            emptyText="点击「编辑」打开 Excalidraw 白板自由绘制"
+            width={width}
+            updateAttributes={updateAttributes}
+            onEdit={startEdit}
+          />
         </div>
       )}
 

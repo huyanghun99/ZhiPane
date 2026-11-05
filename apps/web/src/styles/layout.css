@@ -307,8 +307,9 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 /* Collapse must shrink the GRID TRACK, not just the sidebar itself — otherwise
    the main column stays pinned at 280px and leaves a dead gap. */
 .shell-body.sb-collapsed { grid-template-columns: 64px 1fr; }
-/* Navigation has no shell-level sidebar — let the content occupy the full row. */
-.app-shell-3.nav-module .shell-body { grid-template-columns: 1fr; }
+/* Navigation and global settings are not knowledge-base scoped: no sidebar. */
+.app-shell-3.nav-module .shell-body,
+.app-shell-3.settings-module .shell-body { grid-template-columns: 1fr; }
 
 
 .sidebar { background: var(--bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; transition: width var(--duration-fast) var(--ease-out); }
@@ -450,8 +451,8 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 
 .more-menu { position: relative; }
-.more-pop { position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; min-width: 200px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-pop); padding: 6px; display: grid; gap: 2px; animation: popIn var(--duration-fast) var(--ease-out); transform-origin: top right; }
-.more-item { justify-content: flex-start; border: 0; background: transparent; color: var(--text-2); padding: 9px 10px; border-radius: 9px; font-size: 14px; gap: 10px; }
+.more-pop { position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; min-width: 216px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-pop); padding: 6px; display: grid; gap: 2px; animation: popIn var(--duration-fast) var(--ease-out); transform-origin: top right; }
+.more-item { justify-content: flex-start; border: 0; background: transparent; color: var(--text-2); padding: 9px 10px; border-radius: 9px; font-size: 14px; gap: 10px; white-space: nowrap; }
 .more-item:hover { background: var(--surface-2); }
 .more-item.danger { color: var(--danger); }
 .more-item.danger:hover { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
@@ -531,7 +532,8 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 .home-capture-icon { color: var(--primary); margin-top: 4px; flex-shrink: 0; }
 .home-capture textarea { border: 0; box-shadow: none; padding: 4px 0; resize: vertical; min-height: 44px; font-size: 15px; }
 .home-capture textarea:focus { box-shadow: none; }
-.home-capture-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.home-capture-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.home-capture-actions button, .home-empty-actions button { white-space: nowrap; flex-shrink: 0; }
 .home-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .stat-card { flex-direction: column; align-items: flex-start; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--shadow-sm); }
 .stat-card:hover { background: var(--surface-2); }
@@ -567,7 +569,8 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 /* ------- Responsive ------- */
 @media (max-width: 900px) {
   .shell-body { grid-template-columns: 72px 1fr; }
-  .app-shell-3.nav-module .shell-body { grid-template-columns: 1fr; }
+  .app-shell-3.nav-module .shell-body,
+  .app-shell-3.settings-module .shell-body { grid-template-columns: 1fr; }
   .sb-nav-item span, .sb-nav-group-label, .sb-section-head, .sb-link-title, .sb-space-btn span, .sb-foot .sb-user { display: none; }
   .sb-nav { grid-template-columns: 1fr; }
   .sb-nav-item { justify-content: center; }
@@ -800,6 +803,10 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 .crumb-pop-item:hover { background: var(--bg); }
 .crumb-pop-item.active { background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); font-weight: 600; }
 .crumb-pop-sep { height: 1px; background: var(--border); margin: 4px 0; }
+.crumb-pop-head { font-size: 11px; font-weight: 600; color: var(--muted); padding: 4px 10px 6px; letter-spacing: .04em; }
+.crumb-pop-empty { font-size: 12px; color: var(--muted); padding: 8px 10px; }
+.ws-settings-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex-shrink: 0; border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 9px; cursor: pointer; }
+.ws-settings-btn:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
 
 /* ===== F12: floating AI assistant ===== */
 .ai-fab {

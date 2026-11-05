@@ -44,6 +44,15 @@ export const Excalidraw = createZhipaneBlock({
       default: '',
       parseHTML: (el: HTMLElement) => el.getAttribute('data-preview') ?? '',
       renderHTML: (attrs: Record<string, unknown>) => ({ 'data-preview': attrs.preview ?? '' })
+    },
+    width: {
+      default: null,
+      parseHTML: (el: HTMLElement) => {
+        const w = el.getAttribute('data-width');
+        return w ? Number(w) || null : null;
+      },
+      renderHTML: (attrs: Record<string, unknown>) =>
+        attrs.width ? { 'data-width': String(attrs.width), style: `width: ${attrs.width}px` } : {}
     }
   }),
   addNodeView: () => ReactNodeViewRenderer(ExcalidrawView)

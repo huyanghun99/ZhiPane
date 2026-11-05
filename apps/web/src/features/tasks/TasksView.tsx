@@ -151,9 +151,10 @@ export function TasksView({ workspace, filter, selectedTask, onSelectTask }: {
 
   const addTask = useCallback((title: string, overrides: Partial<Task> = {}) => {
     const status: TaskStatus = GTD_STATUS_KEYS.has(filter) ? (filter as TaskStatus) : 'inbox';
-    const projectId = typeof filter === 'string' && filter.startsWith('p_') ? filter.slice(2) : null;
+    const candidate = typeof filter === 'string' && filter.startsWith('p_') ? filter.slice(2) : null;
+    const projectId = candidate && projects.some((p) => p.id === candidate) ? candidate : null;
     createTaskMut.mutate({ title, status, projectId, ...overrides });
-  }, [createTaskMut, filter]);
+  }, [createTaskMut, filter, projects]);
 
   const addSubtasks = useCallback((subs: Partial<Task>[]) => {
     for (const s of subs) createTaskMut.mutate(s);

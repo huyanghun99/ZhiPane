@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Archive, ChevronDown, ChevronRight, Download, Maximize2, MoreHorizontal, Printer, Share2, Star, Trash2, Upload
+  Archive, ChevronDown, ChevronRight, Download, Maximize2, MoreHorizontal, Plus, Printer, Settings2, Share2, Star, Trash2, Upload
 } from 'lucide-react';
 import { LLM_STATUS_LABEL, useEditorStatus } from './editorStatus';
 import { SaveIndicator } from './SaveIndicator';
@@ -37,7 +37,7 @@ function buildCrumbChain(tree: TreeNode[] | undefined, pageId: string | null): T
  * "unstable buttons" the user reported. Left = breadcrumbs, right = the two
  * everyday actions (favourite / share) plus a "more" menu for everything else.
  */
-export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwitchSpace, fullWidth, onToggleFullWidth }: {
+export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwitchSpace, onCreateSpace, onOpenKbSettings, fullWidth, onToggleFullWidth }: {
   space: Space | null;
   spaces: Space[];
   route: MainRoute;
@@ -45,6 +45,8 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
   pageTitle?: string | null;
   tree?: TreeNode[];
   onSwitchSpace?: (spId: string) => void;
+  onCreateSpace?: () => void;
+  onOpenKbSettings?: () => void;
   fullWidth: boolean;
   onToggleFullWidth: () => void;
 }) {
@@ -132,14 +134,22 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
             <button className="crumb-link" onClick={() => setSpaceDropdown((v) => !v)}>
               {space.name} <ChevronDown size={11} />
             </button>
-            {spaceDropdown && spaces.length > 0 && (
+            {spaceDropdown && (
               <div className="crumb-pop">
-                {spaces.map((sp) => (
+                <div className="crumb-pop-head">切换空间</div>
+                {spaces.length ? spaces.map((sp) => (
                   <button key={sp.id} className={`crumb-pop-item${sp.id === space.id ? ' active' : ''}`}
                     onClick={() => { setSpaceDropdown(false); onSwitchSpace?.(sp.id); }}>
                     {sp.name}
                   </button>
-                ))}
+                )) : <div className="crumb-pop-empty">这个知识库还没有空间</div>}
+                <div className="crumb-pop-sep" />
+                <button className="crumb-pop-item" onClick={() => { setSpaceDropdown(false); onCreateSpace?.(); }}>
+                  <Plus size={13} /> 新建空间
+                </button>
+                <button className="crumb-pop-item" onClick={() => { setSpaceDropdown(false); onOpenKbSettings?.(); }}>
+                  <Settings2 size={13} /> 知识库设置
+                </button>
               </div>
             )}
           </div>

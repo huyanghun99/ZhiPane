@@ -57,7 +57,7 @@ export type TreeNode = PageNode & { children: TreeNode[] };
 export type MainRoute = 'home' | 'page' | 'organize' | 'search' | 'ask' | 'map' | 'archive' | 'tasks' | 'nav' | 'settings';
 
 /** Top-level module switch key (knowledge / tasks / nav). */
-export type ModuleKey = 'kb' | 'tasks' | 'nav';
+export type ModuleKey = 'kb' | 'tasks' | 'nav' | 'settings';
 
 export type RagSession = {
   id: string;

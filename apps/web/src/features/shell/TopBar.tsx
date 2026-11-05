@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, CheckSquare, ChevronDown, Compass, LogOut, Monitor, Moon,
-  Pencil, Plus, Search, Settings, Sparkles, Sun, Trash2
+  Pencil, Plus, Search, Settings, Settings2, Sparkles, Sun, Trash2
 } from 'lucide-react';
 import { del, patch, post } from '../../api';
 import { useDialog } from '../../components/Dialog';
@@ -18,11 +18,12 @@ import type { ThemeMode } from '../../theme';
  * and document actions moved to the always-mounted KbToolbar below so they no
  * longer appear/disappear as the user switches pages.
  */
-export function TopBar({ module, workspace, workspaces, onPickWorkspace, onOpenPalette, onNavigate, me, theme, onToggleTheme, onLogout }: {
+export function TopBar({ module, workspace, workspaces, onPickWorkspace, onOpenKbSettings, onOpenPalette, onNavigate, me, theme, onToggleTheme, onLogout }: {
   module?: ModuleKey;
   workspace: Workspace | null;
   workspaces: Workspace[];
   onPickWorkspace: (w: Workspace) => void;
+  onOpenKbSettings?: () => void;
   onOpenPalette: () => void;
   onNavigate: (r: MainRoute) => void;
   me?: User;
@@ -110,6 +111,12 @@ export function TopBar({ module, workspace, workspaces, onPickWorkspace, onOpenP
           <span className="topbar-brand-name">知行台</span>
         </div>
 
+        {/* Knowledge-base-level settings lives next to the picker; /settings is global. */}
+        {module === 'kb' && (
+          <button className="ws-settings-btn" title="知识库设置" aria-label="知识库设置" onClick={() => onOpenKbSettings?.()}>
+            <Settings2 size={15} />
+          </button>
+        )}
         {/* The knowledge-base picker only makes sense in the kb module. */}
         {module === 'kb' && (
           <div className="topbar-ws" ref={wsRef}>
@@ -174,9 +181,9 @@ export function TopBar({ module, workspace, workspaces, onPickWorkspace, onOpenP
                 <div className="more-sep" />
                 <button className="more-item" onClick={onToggleTheme}>
                   {theme === 'dark' ? <Sun size={14} /> : theme === 'light' ? <Moon size={14} /> : <Monitor size={14} />}
-                  {' '}切换主题（当前：{theme === 'dark' ? '深色' : theme === 'light' ? '浅色' : '跟随系统'}）
+                  {' '}主题：{theme === 'dark' ? '深色' : theme === 'light' ? '浅色' : '跟随系统'}
                 </button>
-                <button className="more-item" onClick={() => navigate(urls.settings())}><Settings size={14} /> 设置</button>
+                <button className="more-item" onClick={() => navigate(urls.settings())}><Settings size={14} /> 全局设置</button>
                 <div className="more-sep" />
                 <button className="more-item danger" onClick={onLogout}><LogOut size={14} /> 退出登录</button>
               </div>

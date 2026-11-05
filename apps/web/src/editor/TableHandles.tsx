@@ -1,22 +1,18 @@
 /**
- * Table drag handles (row + column reorder) — self-contained, zero external
- * deps (no @docmost/editor-ext / pragmatic-dnd / mantine).
+ * Table controls: row/column reorder grips + a floating toolbar with insert /
+ * delete row / column actions and a row-density switch.
  *
- * Mirrors docmost's table-handle UX: on hover over a cell we show a grip on
- * the left of the row and on top of the column. Dragging a grip reorders the
- * row/column via a single ProseMirror transaction. Header pinning (sticky
- * `th`) lives in editor.css.
- *
- * Implementation notes:
- * - Hover detection uses `elementFromPoint` so it works on native tiptap
- *   table DOM (we don't need editor-ext's grip-selection state).
- * - Reorder is done by rebuilding the table node: splice the moved
- *   row/column out and back in at the target index, then `replaceWith`.
- *   This keeps cell attributes and is safe for our 1×1-cell tables.
+ * Self-contained, zero external deps. Hover detection uses elementFromPoint so
+ * it works on native tiptap table DOM. Reorder rebuilds the table node in one
+ * ProseMirror transaction; insert/delete delegate to the official table
+ * commands after placing the caret in the hovered cell.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type Editor } from '@tiptap/react';
 import { Fragment, type Node as PMNode } from '@tiptap/pm/model';
+import {
+  ArrowDownToLine, ArrowRightToLine, ArrowUpToLine, Columns3, Minus, Plus, Rows3
+} from 'lucide-react';
 
 interface HoverState {
   cellEl: HTMLElement;
@@ -28,6 +24,24 @@ interface HoverState {
 }
 
 type DragState = { type: 'row' | 'col'; from: number; over: number } | null;
+type Density = 'compact' | 'normal' | 'relaxed';
+type TableCommand =
+  | 'addRowBefore' | 'addRowAfter' | 'deleteRow'
+  | 'addColumnBefore' | 'addColumnAfter' | 'deleteColumn';
+
+const DENSITY_KEY = 'zp.tableDensity';
+
+function readDensity(): Density {
+  try {
+    const v = localStorage.getItem(DENSITY_KEY);
+    return v === 'compact' || v === 'relaxed' ? v : 'normal';
+  } catch { return 'normal'; }
+}
+
+function applyDensity(editor: Editor, d: Density) {
+  const root = (editor.view.dom as HTMLElement).closest('.editor-content') as HTMLElement | null;
+  if (root) root.dataset.tableDensity = d;
+}
 
 /** Position just before the <table> node in the doc. */
 function getTablePos(editor: Editor, tableEl: HTMLElement): number | null {
@@ -87,8 +101,11 @@ function Grip() {
 export function TableHandles({ editor }: { editor: Editor }) {
   const [hover, setHover] = useState<HoverState | null>(null);
   const [drag, setDrag] = useState<DragState>(null);
+  const [density, setDensity] = useState<Density>(readDensity);
   const dragRef = useRef<DragState>(null);
   dragRef.current = drag;
+
+  useEffect(() => { applyDensity(editor, density); }, [editor, density]);
 
   const clearHover = useCallback(() => {
     if (!dragRef.current) setHover(null);
@@ -102,9 +119,7 @@ export function TableHandles({ editor }: { editor: Editor }) {
       if (dragRef.current) return;
       const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
       if (!el) return clearHover();
-      // Keep the current hover while the pointer is over one of our handles
-      // (they sit outside the cells, so elementFromPoint would otherwise
-      // resolve to the handle and hide it).
+      // Keep the current hover while the pointer is over one of our controls.
       if (el.closest('[data-table-handle]')) return;
       const cell = el.closest('td, th') as HTMLElement | null;
       if (!cell || !dom.contains(cell)) return clearHover();
@@ -165,6 +180,54 @@ export function TableHandles({ editor }: { editor: Editor }) {
     };
   }, [drag, editor, hover]);
 
+  /** Resolve the hovered cell against the LIVE DOM (rows may have been inserted). */
+  const liveCell = () => {
+    if (!hover) return null;
+    const table = hover.tableEl.isConnected
+      ? hover.tableEl
+      : (editor.view.dom.querySelector('table') as HTMLTableElement | null);
+    const row = table?.querySelectorAll('tr')[hover.rowIndex] as HTMLTableRowElement | undefined;
+    const cell = row?.children[hover.colIndex] as HTMLElement | undefined;
+    return table && row && cell ? { table, row, cell } : null;
+  };
+
+  /** Place the caret in the hovered cell, then run a native table command. */
+  const runCommand = (name: TableCommand) => {
+    if (!hover) return;
+    const live = liveCell();
+    let pos: number | null = null;
+    if (live) {
+      try { pos = editor.view.posAtDOM(live.cell, 0); } catch { /* detached */ }
+    }
+    // Fallback: just inside the first cell of the first row.
+    if (pos == null) pos = hover.tablePos + 3;
+    editor.chain().focus().setTextSelection(pos).run();
+    switch (name) {
+      case 'addRowBefore': editor.commands.addRowBefore(); break;
+      case 'addRowAfter': editor.commands.addRowAfter(); break;
+      case 'deleteRow': editor.commands.deleteRow(); break;
+      case 'addColumnBefore': editor.commands.addColumnBefore(); break;
+      case 'addColumnAfter': editor.commands.addColumnAfter(); break;
+      case 'deleteColumn': editor.commands.deleteColumn(); break;
+    }
+    // Keep the toolbar in place for consecutive edits: ProseMirror may replace
+    // cell DOM nodes, so refresh the hover references on the next frame.
+    requestAnimationFrame(() => {
+      const next = liveCell();
+      if (next && hover) {
+        setHover({ ...hover, cellEl: next.cell, rowEl: next.row, tableEl: next.table });
+      } else {
+        setHover(null);
+      }
+    });
+  };
+
+  const changeDensity = (d: Density) => {
+    setDensity(d);
+    try { localStorage.setItem(DENSITY_KEY, d); } catch { /* ignore */ }
+    applyDensity(editor, d);
+  };
+
   if (!editor.isEditable || !hover) return null;
 
   const startDrag = (type: 'row' | 'col') => (e: React.PointerEvent) => {
@@ -189,28 +252,40 @@ export function TableHandles({ editor }: { editor: Editor }) {
     const t = hover.tableEl.getBoundingClientRect();
     return { left: c.left + c.width / 2 - 8, top: t.top - 20, width: 16 };
   })();
+  const tableRect = hover.tableEl.getBoundingClientRect();
+  const toolbarStyle = {
+    left: Math.max(8, tableRect.left),
+    top: Math.max(8, tableRect.top - 34)
+  };
 
   return (
     <>
+      <div data-table-handle className="th-toolbar" style={toolbarStyle} contentEditable={false}>
+        <span className="th-group-label"><Rows3 size={12} /> 行</span>
+        <button title="在上方插入行" onClick={() => runCommand('addRowBefore')}><ArrowUpToLine size={13} /><Plus size={10} /></button>
+        <button title="在下方插入行" onClick={() => runCommand('addRowAfter')}><ArrowDownToLine size={13} /><Plus size={10} /></button>
+        <button title="删除当前行" className="danger" onClick={() => runCommand('deleteRow')}><Minus size={13} /></button>
+        <span className="th-sep" />
+        <span className="th-group-label"><Columns3 size={12} /> 列</span>
+        <button title="在左侧插入列" onClick={() => runCommand('addColumnBefore')}><ArrowUpToLine size={13} className="rotate-90" /><Plus size={10} /></button>
+        <button title="在右侧插入列" onClick={() => runCommand('addColumnAfter')}><ArrowRightToLine size={13} /><Plus size={10} /></button>
+        <button title="删除当前列" className="danger" onClick={() => runCommand('deleteColumn')}><Minus size={13} /></button>
+        <span className="th-sep" />
+        <select title="单元格行高" value={density} onChange={(e) => changeDensity(e.target.value as Density)}>
+          <option value="compact">紧凑</option>
+          <option value="normal">标准</option>
+          <option value="relaxed">宽松</option>
+        </select>
+      </div>
       {rowRect && (
-        <div
-          data-table-handle
-          className="th-handle"
-          style={rowRect}
-          title="拖动以移动该行"
-          onPointerDown={startDrag('row')}
-        >
+        <div data-table-handle className="th-handle" style={rowRect}
+          title="拖动以移动该行" onPointerDown={startDrag('row')}>
           <Grip />
         </div>
       )}
       {colRect && (
-        <div
-          data-table-handle
-          className="th-handle"
-          style={colRect}
-          title="拖动以移动该列"
-          onPointerDown={startDrag('col')}
-        >
+        <div data-table-handle className="th-handle" style={colRect}
+          title="拖动以移动该列" onPointerDown={startDrag('col')}>
           <Grip />
         </div>
       )}

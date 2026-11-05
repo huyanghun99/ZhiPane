@@ -2,6 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { type NodeViewProps } from '@tiptap/react';
 import { Pencil } from 'lucide-react';
 import { BlockFrame } from './BlockFrame';
+import { BlockPreview } from './BlockPreview';
 
 const EMPTY_XML =
   '<mxGraphModel dx="800" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="800" pageHeight="600" math="0" shadow="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel>';
@@ -12,6 +13,7 @@ const DRAWIO_URL =
 export const DrawioView = memo(function DrawioView({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
   const xml = (node.attrs.xml as string) || '';
   const preview = (node.attrs.preview as string) || '';
+  const width = (node.attrs.width as number | null) ?? null;
   const [open, setOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const xmlRef = useRef(xml);
@@ -107,15 +109,16 @@ export const DrawioView = memo(function DrawioView({ node, updateAttributes, sel
 
   return (
     <BlockFrame label="流程图（Draw.io）" kind="drawio" id={node.attrs.id} selected={selected} onDelete={() => deleteNode?.()} actions={actions}>
-      {preview ? (
-        <div className="drawio-preview" contentEditable={false} onDoubleClick={() => setOpen(true)}>
-          <img src={preview} alt="diagram" />
-        </div>
-      ) : (
-        <div className="drawio-empty" contentEditable={false} onDoubleClick={() => setOpen(true)}>
-          点击「编辑图表」打开 Draw.io 编辑器绘制流程图
-        </div>
-      )}
+      <div className="drawio-preview">
+        <BlockPreview
+          preview={preview}
+          alt="diagram"
+          emptyText="点击「编辑图表」打开 Draw.io 编辑器绘制流程图"
+          width={width}
+          updateAttributes={updateAttributes}
+          onEdit={() => setOpen(true)}
+        />
+      </div>
 
       {open && (
         <div

@@ -28,6 +28,7 @@ import { RightPanel } from './RightPanel';
 import { useShellContext, loadLastSpace, saveLastSpace } from './useShellContext';
 import { HomeView } from '../home/HomeView';
 import { ArchiveCenter } from './ArchiveCenter';
+import { WorkspaceSettingsModal } from './WorkspaceSettingsModal';
 import { PageEditor } from '../notes/PageEditor';
 import { WikiView } from '../wiki/WikiView';
 import { SearchView } from '../search/SearchView';
@@ -85,6 +86,7 @@ export function ShellLayout({ me }: { me: User }) {
     });
   }, []);
   const [newPageOpen, setNewPageOpen] = useState(false);
+  const [kbSettingsOpen, setKbSettingsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     try { return !localStorage.getItem('ml.onboarded'); } catch { return false; }
@@ -290,6 +292,28 @@ export function ShellLayout({ me }: { me: User }) {
   // (rendered in the shell column, in parallel with the knowledge sidebar) and the
   // task workbench stay in sync, and the filter survives module switches.
   const dialog = useDialog();
+
+  // Space creation from the breadcrumb dropdown. Persist the new space as the
+  // last-visited one so "/" and context-less routes stay in this workspace.
+  const onCreateSpace = useCallback(async () => {
+    if (!workspace) return;
+    const name = await dialog.prompt({
+      title: '新建空间', placeholder: '输入空间名称', confirmText: '创建'
+    });
+    if (!name?.trim()) return;
+    try {
+      const r = await post<{ space: Space }>('/api/spaces', {
+        workspaceId: workspace.id, name: name.trim(), spaceKind: 'area'
+      });
+      await qc.invalidateQueries({ queryKey: ['spaces', workspace.id] });
+      saveLastSpace({ workspaceId: workspace.id, spaceId: r.space.id });
+      navigate(urls.spaceHome(workspace.id, r.space.id));
+      toast.success('空间已创建');
+    } catch (e) {
+      toast.error(`创建失败：${(e as Error).message}`);
+    }
+  }, [workspace, dialog, qc, navigate, toast]);
+
   const TASK_FILTER_KEY = 'zp.taskFilter';
   const [taskFilter, setTaskFilter] = useState<TaskFilter>(() => {
     try { const v = sessionStorage.getItem(TASK_FILTER_KEY); if (v) return v as TaskFilter; } catch { /* ignore */ }
@@ -311,6 +335,20 @@ export function ShellLayout({ me }: { me: User }) {
   const sidebarTasks = sidebarTasksQ.data?.tasks ?? [];
   const sidebarProjects = sidebarProjectsQ.data?.projects ?? [];
 
+  // A project deleted in an earlier session can leave a stale `p_<id>` filter
+  // in sessionStorage. Clear it once projects are known so quick-add never
+  // targets a missing project (and the sidebar doesn't show a phantom view).
+  useEffect(() => {
+    if (activeRoute !== 'tasks' || sidebarProjectsQ.isLoading) return;
+    if (typeof taskFilter === 'string' && taskFilter.startsWith('p_')) {
+      const id = taskFilter.slice(2);
+      if (!sidebarProjects.some((p) => p.id === id)) {
+        setTaskFilter('inbox');
+        try { sessionStorage.setItem(TASK_FILTER_KEY, 'inbox'); } catch { /* ignore */ }
+      }
+    }
+  }, [activeRoute, sidebarProjectsQ.isLoading, taskFilter, sidebarProjects]);
+
   const invalidateSidebar = useCallback(() => {
     const id = tasksWsForSidebar?.id;
     if (!id) return;
@@ -326,9 +364,13 @@ export function ShellLayout({ me }: { me: User }) {
 
   const sidebarAddTask = useCallback((title: string) => {
     const status: TaskStatus = (typeof taskFilter === 'string' && ['inbox', 'today', 'next', 'scheduled', 'waiting', 'someday'].includes(taskFilter)) ? (taskFilter as TaskStatus) : 'inbox';
-    const projectId = typeof taskFilter === 'string' && taskFilter.startsWith('p_') ? taskFilter.slice(2) : null;
+    // sessionStorage can hold a filter pointing at a project that was deleted.
+    // Sending that id caused a FK 500 on the server ("快捷创建任务失败"), so
+    // only forward a project that actually exists right now.
+    const candidate = typeof taskFilter === 'string' && taskFilter.startsWith('p_') ? taskFilter.slice(2) : null;
+    const projectId = candidate && sidebarProjects.some((p) => p.id === candidate) ? candidate : null;
     sidebarCreateTask.mutate({ title, status, projectId });
-  }, [sidebarCreateTask, taskFilter]);
+  }, [sidebarCreateTask, taskFilter, sidebarProjects]);
 
   const sidebarToggleStatus = useCallback((task: Task) => {
     const done = task.status === 'done';
@@ -440,8 +482,13 @@ export function ShellLayout({ me }: { me: User }) {
 
   const showRight = pageMatch && !!workspace && !!space;
 
+  // /settings is a GLOBAL settings page (account / AI provider / preferences),
+  // not knowledge-base scoped. Give it its own module so the KB sidebar, the
+  // KB toolbar and the workspace picker all stay out of the way.
   const moduleKey: ModuleKey =
-    activeRoute === 'tasks' ? 'tasks' : activeRoute === 'nav' ? 'nav' : 'kb';
+    activeRoute === 'settings' ? 'settings'
+      : activeRoute === 'tasks' ? 'tasks'
+        : activeRoute === 'nav' ? 'nav' : 'kb';
 
   // P2-2: remember the last position (URL) per module so switching back restores
   // where the user left off instead of "restarting" at the module root.
@@ -479,12 +526,13 @@ export function ShellLayout({ me }: { me: User }) {
   }
 
   return (
-    <div className={`app-shell-3${moduleKey === 'nav' ? ' nav-module' : ''}`}>
+    <div className={`app-shell-3${moduleKey === 'nav' ? ' nav-module' : ''}${moduleKey === 'settings' ? ' settings-module' : ''}`}>
       <TopBar
         module={moduleKey}
         workspace={workspace}
         workspaces={workspaces}
         onPickWorkspace={onPickWorkspace}
+        onOpenKbSettings={() => setKbSettingsOpen(true)}
         onOpenPalette={() => setPaletteOpen(true)}
         onNavigate={onNavigateWrapped}
         me={meUser}
@@ -538,6 +586,8 @@ export function ShellLayout({ me }: { me: User }) {
               pageTitle={ctx.pageTitle}
               tree={treeData?.tree ?? []}
               onSwitchSpace={(spId) => { const sp = spaces?.find((s) => s.id === spId); if (sp) onPickSpace(sp); }}
+              onCreateSpace={onCreateSpace}
+              onOpenKbSettings={() => setKbSettingsOpen(true)}
               fullWidth={fullWidth}
               onToggleFullWidth={toggleFullWidth}
             />
@@ -570,6 +620,10 @@ export function ShellLayout({ me }: { me: User }) {
           </div>
         </div>
       </div>
+
+      {kbSettingsOpen && workspace && (
+        <WorkspaceSettingsModal workspace={workspace} space={space} onClose={() => setKbSettingsOpen(false)} />
+      )}
 
       {paletteOpen && (
         <Suspense fallback={null}>
