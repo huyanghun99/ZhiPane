@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronDown, ChevronRight, Download, Maximize2, Minimize2, Printer, Share2, Star, Trash2, Upload
+  ChevronDown, ChevronRight, Download, Maximize2, MoreHorizontal, Printer, Share2, Star, Trash2, Upload
 } from 'lucide-react';
 import { LLM_STATUS_LABEL, useEditorStatus } from './editorStatus';
 import { SaveIndicator } from './SaveIndicator';
@@ -34,8 +34,8 @@ function buildCrumbChain(tree: TreeNode[] | undefined, pageId: string | null): T
 /**
  * Always-mounted second row for the knowledge-base module. Keeping it out of
  * the header means the row never appears/disappears as pages change — the
- * "unstable buttons" the user reported. Left = breadcrumbs, right = the page
- * actions that used to live in the header and in .page-editor-head.
+ * "unstable buttons" the user reported. Left = breadcrumbs, right = the two
+ * everyday actions (favourite / share) plus a "more" menu for everything else.
  */
 export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwitchSpace, fullWidth, onToggleFullWidth }: {
   space: Space | null;
@@ -52,18 +52,21 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
   const { status } = useEditorStatus();
   const [spaceDropdown, setSpaceDropdown] = useState(false);
   const [midOpen, setMidOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const spDropRef = useRef<HTMLDivElement | null>(null);
+  const moreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!spaceDropdown && !midOpen) return;
+    if (!spaceDropdown && !midOpen && !moreOpen) return;
     const onClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
       if (spDropRef.current && !spDropRef.current.contains(t)) setSpaceDropdown(false);
       if (!t.closest('.crumb-dropdown')) setMidOpen(false);
+      if (moreRef.current && !moreRef.current.contains(t)) setMoreOpen(false);
     };
     window.addEventListener('mousedown', onClick);
     return () => window.removeEventListener('mousedown', onClick);
-  }, [spaceDropdown, midOpen]);
+  }, [spaceDropdown, midOpen, moreOpen]);
 
   const crumbTail = route === 'page' ? (pageTitle || status.pageTitle || '未命名笔记') : ROUTE_LABEL[route];
   const crumbChain = useMemo(
@@ -160,14 +163,8 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
             </span>
             <SaveIndicator state={status.saveState} />
             <span className="kb-tool-sep" />
-            <button className={`kb-tool${fullWidth ? ' active' : ''}`}
-              title={fullWidth ? '退出全宽模式' : '全宽模式（正文铺满并收起右侧 AI 面板）'}
-              aria-label={fullWidth ? '退出全宽模式' : '全宽模式'} onClick={onToggleFullWidth}>
-              {fullWidth ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-              <span className="kb-tool-label">全宽</span>
-            </button>
-            {/* Labels stay fixed-width (e.g. always "收藏", never "取消收藏")
-                so toggling favourite cannot make the row jump. */}
+            {/* Labels stay fixed-width (always "收藏", never "取消收藏") so
+                toggling favourite cannot make the row jump. */}
             <button className={`kb-tool${status.favorite ? ' on' : ''}`} title={status.favorite ? '取消收藏' : '收藏'}
               aria-label={status.favorite ? '取消收藏' : '收藏'} onClick={() => status.onToggleFavorite?.()}>
               <Star size={14} fill={status.favorite ? 'currentColor' : 'none'} />
@@ -176,18 +173,42 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
             <button className="kb-tool" title="分享" aria-label="分享" onClick={() => status.onShare?.()}>
               <Share2 size={14} /><span className="kb-tool-label">分享</span>
             </button>
-            <button className="kb-tool" title="导出 Markdown" aria-label="导出 Markdown" onClick={() => status.onExport?.()}>
-              <Download size={14} /><span className="kb-tool-label">导出</span>
-            </button>
-            <button className="kb-tool kb-tool-secondary" title="导入 Markdown" aria-label="导入 Markdown" onClick={() => status.onImport?.()}>
-              <Upload size={14} /><span className="kb-tool-label">导入</span>
-            </button>
-            <button className="kb-tool kb-tool-secondary" title="打印 / 导出 PDF" aria-label="打印 / 导出 PDF" onClick={() => status.onPrint?.()}>
-              <Printer size={14} /><span className="kb-tool-label">打印</span>
-            </button>
-            <button className="kb-tool danger" title="删除笔记" aria-label="删除笔记" onClick={() => status.onDelete?.()}>
-              <Trash2 size={14} /><span className="kb-tool-label">删除</span>
-            </button>
+
+            <div className="more-menu" ref={moreRef}>
+              <button className="kb-tool kb-more" title="更多操作" aria-label="更多操作"
+                aria-expanded={moreOpen} onClick={() => setMoreOpen((v) => !v)}>
+                <MoreHorizontal size={16} />
+                <span className="kb-tool-label">更多</span>
+                {fullWidth && <i className="kb-more-dot" aria-hidden="true" />}
+              </button>
+              {moreOpen && (
+                <div className="more-pop kb-more-menu">
+                  {/* Full width is a MODE, so expose it as a switch rather than
+                      a one-shot action button. Keeps the menu open so the state
+                      change is visible; click outside to dismiss. */}
+                  <button className="more-item kb-switch-row" role="switch" aria-checked={fullWidth}
+                    title="去掉正文 820px 宽度上限" onClick={onToggleFullWidth}>
+                    <Maximize2 size={14} />
+                    <span className="kb-switch-label">全宽模式</span>
+                    <span className={`kb-switch${fullWidth ? ' on' : ''}`} aria-hidden="true"><i /></span>
+                  </button>
+                  <div className="more-sep" />
+                  <button className="more-item" onClick={() => { setMoreOpen(false); status.onExport?.(); }}>
+                    <Download size={14} /> 导出 Markdown
+                  </button>
+                  <button className="more-item" onClick={() => { setMoreOpen(false); status.onImport?.(); }}>
+                    <Upload size={14} /> 导入 Markdown
+                  </button>
+                  <button className="more-item" onClick={() => { setMoreOpen(false); status.onPrint?.(); }}>
+                    <Printer size={14} /> 打印 / 导出 PDF
+                  </button>
+                  <div className="more-sep" />
+                  <button className="more-item danger" onClick={() => { setMoreOpen(false); status.onDelete?.(); }}>
+                    <Trash2 size={14} /> 删除笔记
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>

@@ -138,7 +138,15 @@ function renderBlock(node: PMNode): string {
     case 'mathBlock': return `<div class="math-block">\\[${escapeHtml(String(a.latex ?? ''))}\\]</div>`;
     case 'mermaid': return `<pre class="mermaid-block">${escapeHtml(String(a.code ?? ''))}</pre>`;
     case 'drawio': return `<div class="embed-placeholder">[Draw.io 流程图]</div>`;
-    case 'excalidraw': return `<div class="embed-placeholder">[Excalidraw 白板]</div>`;
+    case 'excalidraw': {
+      // Shared/read-only pages used to show a bare "[Excalidraw 白板]" label
+      // even when a preview existed. Only inline image data URLs are embedded
+      // (never an arbitrary URL) to keep the rendered HTML safe.
+      const p = String(a.preview ?? '');
+      if (/^data:image\/(png|jpeg|svg\+xml);/i.test(p))
+        return `<div class="excalidraw-preview"><img src="${escapeHtml(p)}" alt="Excalidraw 白板" /></div>`;
+      return `<div class="embed-placeholder">[Excalidraw 白板]</div>`;
+    }
     case 'embed': return `<a href="${escapeHtml(String(a.url ?? ''))}" target="_blank" rel="noreferrer">${escapeHtml(String(a.url ?? ''))}</a>`;
     case 'image': return `<img src="${escapeHtml(String(a.src ?? ''))}" alt="${escapeHtml(String(a.alt ?? ''))}" />`;
     case 'video': return `<video src="${escapeHtml(String(a.src ?? ''))}" controls />`;

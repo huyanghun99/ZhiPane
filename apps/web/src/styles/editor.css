@@ -232,7 +232,8 @@ button.primary.sm { padding: 6px 9px; font-size: 12px; }
 .excalidraw-act:hover { background: var(--surface-3); }
 .excalidraw-act.primary { background: var(--primary); color: #fff; }
 .excalidraw-act.primary:hover { filter: brightness(1.08); }
-.excalidraw-canvas { height: min(70vh, 640px); width: 100%; }
+.excalidraw-canvas { height: min(70vh, 640px); width: 100%; touch-action: none; overscroll-behavior: contain; }
+.excalidraw-modal { overscroll-behavior: contain; }
 .excalidraw-canvas .excalidraw { height: 100%; }
 .excalidraw-loading { height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
 .excalidraw-preview { padding: 8px; background: #fff; }

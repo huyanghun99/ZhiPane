@@ -124,10 +124,10 @@ export function SettingsView({ me, onLogout, fullWidth, onToggleFullWidth }: {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '4px 0' }}>
           <label style={{ ...fieldStyle, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <input type="checkbox" checked={fullWidth} onChange={onToggleFullWidth} />
-            <span>知识库文章全宽显示（去掉 820px 宽度上限，并收起右侧 AI 面板）</span>
+            <span>知识库文章全宽显示（去掉 820px 宽度上限，铺满当前内容区）</span>
           </label>
           <p className="muted" style={{ margin: 0, fontSize: 12 }}>
-            也可在文章顶部工具条点击「全宽」快速切换；退出全宽后右侧面板会恢复原状态。此偏好保存在本机浏览器。
+            右侧「大纲」面板不会被强制收起，你可以单独收起它，正文会随之变宽。也可在文章顶部「更多」菜单里切换全宽模式。此偏好保存在本机浏览器。
           </p>
         </div>
       </div>
