@@ -61,6 +61,29 @@ export function ShellLayout({ me }: { me: User }) {
 
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(true);
+  // Sidebar collapse belongs to the shell: it changes the shell-body grid
+  // track, so the main column reflows instead of leaving a ~216px dead gap.
+  const [sbCollapsed, setSbCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem('sb.collapsed') === '1'; } catch { return false; }
+  });
+  const toggleSbCollapsed = useCallback(() => {
+    setSbCollapsed((c) => {
+      const next = !c;
+      try { localStorage.setItem('sb.collapsed', next ? '1' : '0'); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+  // Article reading width preference, shared by the kb toolbar and Settings.
+  const [fullWidth, setFullWidth] = useState<boolean>(() => {
+    try { return localStorage.getItem('kb.fullWidth') === '1'; } catch { return false; }
+  });
+  const toggleFullWidth = useCallback(() => {
+    setFullWidth((v) => {
+      const next = !v;
+      try { localStorage.setItem('kb.fullWidth', next ? '1' : '0'); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
   const [newPageOpen, setNewPageOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
@@ -300,7 +323,7 @@ export function ShellLayout({ me }: { me: User }) {
   });
 
   const renderCenter = () => {
-    if (isSettings) return <SettingsView me={meUser} onLogout={onLogout} />;
+    if (isSettings) return <SettingsView me={meUser} onLogout={onLogout} fullWidth={fullWidth} onToggleFullWidth={toggleFullWidth} />;
     if (archiveMatch) return <ArchiveCenter space={space} workspace={workspace} onNavigate={onNavigate} />;
     if (tasksMatch) {
       // /tasks carries no workspaceId in the URL; fall back to the first
@@ -445,7 +468,7 @@ export function ShellLayout({ me }: { me: User }) {
         onLogout={onLogout}
       />
 
-      <div className="shell-body">
+      <div className={`shell-body${moduleKey === 'kb' && sbCollapsed ? ' sb-collapsed' : ''}${fullWidth ? ' kb-full-width' : ''}`}>
         {moduleKey === 'kb' && (
           <KnowledgeSidebar
             workspace={workspace}
@@ -457,6 +480,8 @@ export function ShellLayout({ me }: { me: User }) {
             onSelectPage={onSelectPage}
             onNavigate={onNavigate}
             onNewNote={onNewNote}
+            collapsed={sbCollapsed}
+            onToggleCollapsed={toggleSbCollapsed}
           />
         )}
         {moduleKey === 'tasks' && tasksWsForSidebar && (
@@ -488,6 +513,8 @@ export function ShellLayout({ me }: { me: User }) {
               pageTitle={ctx.pageTitle}
               tree={treeData?.tree ?? []}
               onSwitchSpace={(spId) => { const sp = spaces?.find((s) => s.id === spId); if (sp) onPickSpace(sp); }}
+              fullWidth={fullWidth}
+              onToggleFullWidth={toggleFullWidth}
             />
           )}
           <div className="center-and-right">

@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronDown, ChevronRight, Download, Printer, Share2, Star, Trash2, Upload
+  ChevronDown, ChevronRight, Download, Maximize2, Minimize2, Printer, Share2, Star, Trash2, Upload
 } from 'lucide-react';
 import { LLM_STATUS_LABEL, useEditorStatus } from './editorStatus';
 import { SaveIndicator } from './SaveIndicator';
@@ -37,7 +37,7 @@ function buildCrumbChain(tree: TreeNode[] | undefined, pageId: string | null): T
  * "unstable buttons" the user reported. Left = breadcrumbs, right = the page
  * actions that used to live in the header and in .page-editor-head.
  */
-export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwitchSpace }: {
+export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwitchSpace, fullWidth, onToggleFullWidth }: {
   space: Space | null;
   spaces: Space[];
   route: MainRoute;
@@ -45,6 +45,8 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
   pageTitle?: string | null;
   tree?: TreeNode[];
   onSwitchSpace?: (spId: string) => void;
+  fullWidth: boolean;
+  onToggleFullWidth: () => void;
 }) {
   const navigate = useNavigate();
   const { status } = useEditorStatus();
@@ -158,6 +160,12 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
             </span>
             <SaveIndicator state={status.saveState} />
             <span className="kb-tool-sep" />
+            <button className={`kb-tool${fullWidth ? ' active' : ''}`}
+              title={fullWidth ? '退出全宽模式' : '全宽模式（正文铺满并收起右侧 AI 面板）'}
+              aria-label={fullWidth ? '退出全宽模式' : '全宽模式'} onClick={onToggleFullWidth}>
+              {fullWidth ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              <span className="kb-tool-label">全宽</span>
+            </button>
             {/* Labels stay fixed-width (e.g. always "收藏", never "取消收藏")
                 so toggling favourite cannot make the row jump. */}
             <button className={`kb-tool${status.favorite ? ' on' : ''}`} title={status.favorite ? '取消收藏' : '收藏'}
@@ -171,10 +179,10 @@ export function KbToolbar({ space, spaces, route, pageId, pageTitle, tree, onSwi
             <button className="kb-tool" title="导出 Markdown" aria-label="导出 Markdown" onClick={() => status.onExport?.()}>
               <Download size={14} /><span className="kb-tool-label">导出</span>
             </button>
-            <button className="kb-tool" title="导入 Markdown" aria-label="导入 Markdown" onClick={() => status.onImport?.()}>
+            <button className="kb-tool kb-tool-secondary" title="导入 Markdown" aria-label="导入 Markdown" onClick={() => status.onImport?.()}>
               <Upload size={14} /><span className="kb-tool-label">导入</span>
             </button>
-            <button className="kb-tool" title="打印 / 导出 PDF" aria-label="打印 / 导出 PDF" onClick={() => status.onPrint?.()}>
+            <button className="kb-tool kb-tool-secondary" title="打印 / 导出 PDF" aria-label="打印 / 导出 PDF" onClick={() => status.onPrint?.()}>
               <Printer size={14} /><span className="kb-tool-label">打印</span>
             </button>
             <button className="kb-tool danger" title="删除笔记" aria-label="删除笔记" onClick={() => status.onDelete?.()}>

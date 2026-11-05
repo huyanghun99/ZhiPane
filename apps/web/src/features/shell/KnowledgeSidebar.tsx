@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Archive, BookOpen, Brain, ChevronsLeft, Download, FileText, Home, LayoutGrid, Pencil, Plus, Settings, Star, Trash2, Wand2
+  Archive, BookOpen, Brain, ChevronsLeft, Download, FileText, Home, LayoutGrid, Pencil, Plus, Star, Trash2, Wand2
 } from 'lucide-react';
 import { api, del, patch, post, renamePage, movePage, copyPage, updatePageIcon } from '../../api';
 import { PageIconPicker } from '../../components/PageIconPicker';
@@ -30,7 +30,8 @@ function flatten(tree: TreeNode[]): TreeNode[] {
 
 export function KnowledgeSidebar({
   workspace, space, spaces, route, selectedPageId,
-  onPickSpace, onSelectPage, onNavigate, onNewNote
+  onPickSpace, onSelectPage, onNavigate, onNewNote,
+  collapsed, onToggleCollapsed
 }: {
   workspace: Workspace | null;
   space: Space | null;
@@ -41,22 +42,13 @@ export function KnowledgeSidebar({
   onSelectPage: (id: string) => void;
   onNavigate: (r: MainRoute) => void;
   onNewNote: () => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 }) {
   const qc = useQueryClient();
   const toast = useToast();
   const dialog = useDialog();
   const { favorites } = useFavorites();
-
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    try { return localStorage.getItem('sb.collapsed') === '1'; } catch { return false; }
-  });
-  const toggleCollapsed = () => {
-    setCollapsed((c) => {
-      const next = !c;
-      try { localStorage.setItem('sb.collapsed', next ? '1' : '0'); } catch { /* ignore */ }
-      return next;
-    });
-  };
 
 
 
@@ -319,10 +311,7 @@ export function KnowledgeSidebar({
         <button className="sb-foot-btn" onClick={() => onNavigate('archive')} title="归档中心">
           <Archive size={15} /> <span>归档中心</span>
         </button>
-        <button className="sb-foot-btn" onClick={() => onNavigate('settings')} title="设置">
-          <Settings size={15} /> <span>设置</span>
-        </button>
-        <button className="sb-foot-btn" title={collapsed ? '展开侧边栏' : '收起侧边栏'} onClick={toggleCollapsed}>
+        <button className="sb-foot-btn" title={collapsed ? '展开侧边栏' : '收起侧边栏'} onClick={onToggleCollapsed}>
           <ChevronsLeft size={15} className={collapsed ? 'flip' : ''} />
         </button>
       </div>

@@ -302,7 +302,11 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 
 /* ------- Three-column app shell ------- */
 .app-shell-3 { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-.shell-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
+.shell-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 280px 1fr; overflow: hidden;
+  transition: grid-template-columns var(--duration-normal) var(--ease-out); }
+/* Collapse must shrink the GRID TRACK, not just the sidebar itself — otherwise
+   the main column stays pinned at 280px and leaves a dead gap. */
+.shell-body.sb-collapsed { grid-template-columns: 64px 1fr; }
 /* Navigation has no shell-level sidebar — let the content occupy the full row. */
 .app-shell-3.nav-module .shell-body { grid-template-columns: 1fr; }
 
@@ -408,6 +412,8 @@ button.ghost.ok:hover { background: color-mix(in srgb, var(--ok) 14%, var(--surf
 .kb-tool:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 .kb-tool.on { color: var(--star); border-color: color-mix(in srgb, var(--star) 45%, var(--border)); background: color-mix(in srgb, var(--star) 12%, var(--surface)); }
 .kb-tool.on:hover { color: var(--star); background: color-mix(in srgb, var(--star) 20%, var(--surface)); border-color: var(--star); }
+.kb-tool.active { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
+.kb-tool.active:hover { color: var(--primary); border-color: var(--primary); background: color-mix(in srgb, var(--primary) 18%, var(--surface)); }
 .kb-tool.danger:hover { color: var(--danger); border-color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
 .crumbs { display: flex; align-items: center; gap: 2px; font-size: var(--text-sm); flex: 1 1 auto; min-width: 0; overflow: hidden; }
 .crumb-link { border: 0; background: transparent; color: var(--muted); padding: 4px 6px; border-radius: 7px; font-weight: 400; font-size: var(--text-sm); cursor: pointer; }
@@ -493,6 +499,13 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 
 /* ------- Document editor (center) ------- */
 .page-editor { display: flex; flex-direction: column; min-height: 100%; max-width: 820px; margin: 0 auto; padding: 0; animation: fadeIn var(--duration-normal) var(--ease-out); }
+/* Full-width reading mode: lifting the 820px cap alone gains only ~20px on a
+   1440px window, so also free the 320px AI panel. Done in CSS (not by mutating
+   rightOpen) so the user's own panel state is restored when the mode exits.
+   Editor children keep their 40px gutters (16px on narrow screens). */
+.kb-full-width .page-editor { max-width: none; }
+.kb-full-width .right-region,
+.kb-full-width .right-reopen { display: none; }
 .page-editor-head { display: flex; align-items: center; gap: 12px; padding: 14px 40px 4px; }
 .page-editor-head .meta { font-size: 12px; color: var(--muted); }
 .page-editor-head .head-spacer { flex: 1; }
@@ -537,6 +550,12 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 .link-btn { border: 0; background: transparent; color: var(--primary); padding: 2px 4px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 3px; }
 .link-btn:hover { background: var(--primary-soft); }
 
+/* Medium widths: drop labels on low-frequency actions first, so the
+   breadcrumbs keep room before the whole group collapses at 1100px. */
+@media (max-width: 1500px) {
+  .kb-tool-secondary .kb-tool-label { display: none; }
+  .kb-tool-secondary { width: 28px; padding: 0; }
+}
 /* Compact labels collapse to bordered icon buttons on medium/narrow screens;
    the border keeps them recognisable as buttons (not bare dots). */
 @media (max-width: 1100px) {

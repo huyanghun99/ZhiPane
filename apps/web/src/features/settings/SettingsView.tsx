@@ -26,7 +26,12 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--text, #111)'
 };
 
-export function SettingsView({ me, onLogout }: { me: User; onLogout: () => void }) {
+export function SettingsView({ me, onLogout, fullWidth, onToggleFullWidth }: {
+  me: User;
+  onLogout: () => void;
+  fullWidth: boolean;
+  onToggleFullWidth: () => void;
+}) {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['ai-config'],
@@ -111,6 +116,19 @@ export function SettingsView({ me, onLogout }: { me: User; onLogout: () => void 
           {me.isInstanceOwner && (
             <div className="rp-info-row"><span>角色</span><b>实例所有者</b></div>
           )}
+        </div>
+      </div>
+
+      <div className="home-card" style={{ marginTop: 16 }}>
+        <div className="home-card-head"><span>阅读偏好</span></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '4px 0' }}>
+          <label style={{ ...fieldStyle, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={fullWidth} onChange={onToggleFullWidth} />
+            <span>知识库文章全宽显示（去掉 820px 宽度上限，并收起右侧 AI 面板）</span>
+          </label>
+          <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+            也可在文章顶部工具条点击「全宽」快速切换；退出全宽后右侧面板会恢复原状态。此偏好保存在本机浏览器。
+          </p>
         </div>
       </div>
 
