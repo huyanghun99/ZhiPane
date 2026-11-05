@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Search, Download, Upload, Pencil, Trash2, Settings as SettingsIcon
+  Check, Plus, Search, Download, Upload, Pencil, Trash2, Settings as SettingsIcon
 } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import { useDialog } from '../../components/Dialog';
@@ -144,6 +144,7 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
 
   // ----- drag & drop -----
   const dragRef = useRef<{ type: 'card' | 'group'; groupId?: string; linkId?: string; index?: number } | null>(null);
+  const lastDragAt = useRef(0);
   const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
 
   const moveCard = (sGroupId: string, sIdx: number, tGroupId: string, tIdx: number) => {
@@ -202,29 +203,7 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
   // directly — no shell-level sidebar and no CustomEvent relay.
 
   return (
-    <div className="nav-view">
-      {/* Keep only the essential actions. Search-engine setup stays on the
-          gear button inside the search box; group navigation is just scrolling
-          the page, so neither needs a dedicated control-bar button. */}
-      <div className="nav-controlbar">
-        <button className="nav-ctrl primary" onClick={() => openGroupModal(null)}><Plus size={15} /> 新增分组</button>
-        <button
-          className="nav-ctrl"
-          disabled={groups.length === 0}
-          title={groups.length === 0 ? '请先新增分组' : '新增网址到第一个分组'}
-          onClick={() => { if (groups[0]) openSiteModal(groups[0].id, null); }}
-        >
-          <Plus size={15} /> 新增网址
-        </button>
-        <button className={`nav-ctrl${editMode ? ' primary' : ''}`} onClick={() => setEditMode((v) => !v)}>
-          <Pencil size={15} /> {editMode ? '退出编辑' : '编辑模式'}
-        </button>
-        <span className="nav-ctrl-sep" />
-        <button className="nav-ctrl" onClick={onExport}><Download size={16} /> 备份</button>
-        <button className="nav-ctrl" onClick={() => fileRef.current?.click()}><Upload size={16} /> 恢复</button>
-        <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { if (e.target.files?.[0]) onImportFile(e.target.files[0]); e.target.value = ''; }} />
-      </div>
-
+    <div className={`nav-view${editMode ? ' edit' : ''}`}>
       <NavClock />
 
       <div className="nav-searchwrap">
@@ -245,7 +224,7 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
         <div className="nav-loading">加载中…</div>
       ) : (
         <div className="nav-container">
-          {groups.length === 0 && !editMode && (
+          {groups.length === 0 && (
             <div className="nav-empty">
               <p>还没有导航分组。</p>
               <button className="btn-primary" onClick={() => openGroupModal(null)}><Plus size={14} /> 新建分组</button>
@@ -268,7 +247,8 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
               <div
                 className="nav-group-head"
                 draggable={editMode}
-                onDragStart={editMode ? (e) => { dragRef.current = { type: 'group', index: gIndex }; (e.target as HTMLElement).classList.add('dragging'); } : undefined}
+                onDragStart={editMode ? (e) => { lastDragAt.current = Date.now(); dragRef.current = { type: 'group', index: gIndex }; (e.target as HTMLElement).classList.add('dragging'); } : undefined}
+                onDragEnd={editMode ? (e) => { (e.target as HTMLElement).classList.remove('dragging'); dragRef.current = null; } : undefined}
               >
                 <span className="nav-group-title">{group.title}</span>
                 {editMode && (
@@ -284,20 +264,24 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
                     key={link.id}
                     className="nav-card"
                     draggable={editMode}
-                    onDragStart={editMode ? (e) => { dragRef.current = { type: 'card', groupId: group.id, linkId: link.id, index: lIndex }; (e.target as HTMLElement).classList.add('dragging'); } : undefined}
+                    onDragStart={editMode ? (e) => { lastDragAt.current = Date.now(); dragRef.current = { type: 'card', groupId: group.id, linkId: link.id, index: lIndex }; (e.target as HTMLElement).classList.add('dragging'); } : undefined}
+                    onDragEnd={editMode ? (e) => { (e.target as HTMLElement).classList.remove('dragging'); dragRef.current = null; } : undefined}
                     onDragOver={editMode ? (e) => e.preventDefault() : undefined}
                     onDrop={editMode ? (e) => {
                       e.preventDefault(); e.stopPropagation();
                       const d = dragRef.current;
                       if (d?.type === 'card') moveCard(d.groupId!, d.index!, group.id, lIndex);
                     } : undefined}
-                    onClick={() => onOpenLink(link.id, link.url)}
+                    onClick={() => {
+                      // A drag often emits a trailing click; don't open the edit
+                      // modal (or the URL) right after reordering a card.
+                      if (Date.now() - lastDragAt.current < 250) return;
+                      if (editMode) openSiteModal(group.id, link.id);
+                      else onOpenLink(link.id, link.url);
+                    }}
                   >
                     {editMode && (
-                      <>
-                        <button className="nav-card-del" onClick={(e) => { e.stopPropagation(); dialog.confirm({ title: '删除链接', message: '删除该链接？', danger: true }).then((ok) => { if (ok) deleteLinkMut.mutate(link.id); }); }}>×</button>
-                        <div className="nav-card-edit" onClick={(e) => { e.stopPropagation(); openSiteModal(group.id, link.id); }} />
-                      </>
+                      <button className="nav-card-del" onClick={(e) => { e.stopPropagation(); dialog.confirm({ title: '删除链接', message: '删除该链接？', danger: true }).then((ok) => { if (ok) deleteLinkMut.mutate(link.id); }); }}>×</button>
                     )}
                     <div className="nav-text-icon">{link.iconChar || firstChar(link.name)}</div>
                     <span>{link.name}</span>
@@ -356,6 +340,23 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
           </div>
         </div>
       )}
+
+      {/* Bottom dock. Resting state exposes only 编辑 / 导入 / 导出; entering
+          edit mode unlocks group + link create / rename / delete inline. */}
+      <div className="nav-controlbar">
+        {editMode && (
+          <>
+            <button className="nav-ctrl" onClick={() => openGroupModal(null)}><Plus size={15} /> 分组</button>
+            <span className="nav-ctrl-sep" />
+          </>
+        )}
+        <button className="nav-ctrl" onClick={() => fileRef.current?.click()} title="从 JSON 文件导入导航数据"><Upload size={15} /> 导入</button>
+        <button className="nav-ctrl" onClick={onExport} title="导出导航数据为 JSON 文件"><Download size={15} /> 导出</button>
+        <button className="nav-ctrl primary" onClick={() => setEditMode((v) => !v)}>
+          {editMode ? <Check size={15} /> : <Pencil size={15} />} {editMode ? '完成' : '编辑'}
+        </button>
+        <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { if (e.target.files?.[0]) onImportFile(e.target.files[0]); e.target.value = ''; }} />
+      </div>
     </div>
   );
 }

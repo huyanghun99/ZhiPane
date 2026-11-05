@@ -5,7 +5,7 @@
 .nav-view {
   height: 100%;
   overflow-y: auto;
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-6) var(--space-4) 100px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -95,9 +95,6 @@
   font-size: 14px; z-index: 5; cursor: pointer;
 }
 .nav-view.edit .nav-card-del { display: flex; }
-.nav-card-edit-overlay { position: absolute; inset: 0; z-index: 4; display: none; }
-.nav-view.edit .nav-card-edit-overlay { display: block; }
-
 .nav-card.nav-add { border: 1px dashed var(--border-strong); background: transparent; box-shadow: none; }
 .nav-card.nav-add:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); box-shadow: var(--shadow-sm); }
 .nav-card.nav-add .nav-text-icon { background: transparent; border-color: var(--border-strong); color: var(--muted); }
@@ -105,19 +102,36 @@
 .nav-card.nav-add svg { color: var(--muted); }
 .nav-card.nav-add:hover svg { color: var(--primary); }
 
+/* Bottom floating dock — the only chrome in the resting state. Replaces the
+   old top-right 6-button row. Token-driven so light/dark both look native. */
 .nav-controlbar {
-  width: 100%; max-width: 1200px;
-  display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap;
-  padding: 4px 4px 14px; margin-bottom: var(--space-3);
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  z-index: 30; width: auto; max-width: calc(100vw - 32px);
+  display: flex; align-items: center; gap: 2px;
+  padding: 6px; border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 10px 30px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08);
 }
-.nav-ctrl { background: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.82rem; color: var(--text-2); display: flex; align-items: center; gap: 6px; transition: background 0.15s, color 0.15s; white-space: nowrap; }
+.nav-ctrl {
+  border: 0; background: transparent; color: var(--text-2);
+  padding: 8px 14px; border-radius: 999px; cursor: pointer;
+  font-weight: 500; font-size: 0.85rem;
+  display: inline-flex; align-items: center; gap: 6px;
+  white-space: nowrap; transition: background .15s, color .15s;
+}
 .nav-ctrl:hover { color: var(--primary); background: var(--surface-2); }
-.nav-ctrl:disabled { opacity: .45; cursor: not-allowed; }
-.nav-ctrl:disabled:hover { color: var(--text-2); background: none; }
-.nav-ctrl.primary { background: var(--primary); color: #fff; border-color: var(--primary); padding: 7px 16px; }
+.nav-ctrl.primary { background: var(--primary); color: #fff; font-weight: 600; padding: 8px 18px; }
 .nav-ctrl.primary:hover { background: var(--primary-hover); color: #fff; }
-
-.nav-ctrl-sep { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
+.nav-ctrl:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.nav-ctrl-sep { width: 1px; height: 18px; background: var(--border-strong); margin: 0 4px; flex-shrink: 0; }
+@media (max-width: 520px) {
+  .nav-controlbar { bottom: 14px; gap: 0; padding: 4px; }
+  .nav-ctrl { padding: 8px 10px; font-size: 0.8rem; }
+  .nav-ctrl.primary { padding: 8px 12px; }
+  .nav-ctrl-sep { margin: 0 2px; }
+}
 
 /* Reuse the shared modal styling already present in base.css / components.css
    (.modal-overlay, .modal, .form-group, .btn-confirm, .btn-cancel). */
