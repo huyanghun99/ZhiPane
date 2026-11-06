@@ -47,6 +47,11 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export const csrfGuard = createMiddleware(async (c, next) => {
   if (!MUTATING.has(c.req.method)) return next();
+  // Bearer tokens are not ambient credentials, so CSRF Origin checks do not
+  // apply to MCP / CalDAV / agent API clients (they may send a foreign Origin).
+  if (/^Bearer\s+/i.test(c.req.header('authorization') ?? '')) return next();
+  // CalDAV clients authenticate with Basic (password = Agent Token).
+  if (/^Basic\s+/i.test(c.req.header('authorization') ?? '')) return next();
   // Development: accept any web origin (UI reachable via network/forwarded URL).
   if (DEV_ALLOW_ANY) return next();
   const origin = c.req.header('origin');

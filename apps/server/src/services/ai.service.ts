@@ -3,6 +3,7 @@ import { env } from '../env';
 import { db } from '../db/client';
 import { spaces, workspaces, aiConfigs } from '@zhipane/db';
 import { decryptSecret } from '../utils/crypto';
+import { getEffectiveEmbedding } from './app-preferences';
 
 // Re-export everything from the shared AI package so existing imports
 // (`MockAiProvider`, `AiProvider`, `AiMessage`, `vectorToSqlLiteral`,
@@ -43,16 +44,19 @@ export interface AiContext {
  *   - `disabled`: no AI / Embedding / RAG / Wiki job may run at all.
  */
 export async function resolveWorkspaceRuntimeConfig(ctx: AiContext): Promise<ResolvedAiRuntime> {
-  // Instance defaults (from env).
+  // Instance defaults (env), with the 全局设置 embedding override taking
+  // precedence. Vectorisation always uses this server-side interface; the
+  // external AI mode only offloads LLM text reasoning.
+  const instanceEmbedding = await getEffectiveEmbedding();
   let policy: 'inherit_workspace' | AiPrivacyPolicy = 'cloud_allowed';
-  let embeddingDimension = env.EMBEDDING_DIMENSION;
+  let embeddingDimension = instanceEmbedding.dimension;
   let driver: string = env.AI_DRIVER;
   let baseUrl = env.OPENAI_API_URL;
   let apiKey = env.OPENAI_API_KEY ?? '';
   let completionModel = env.AI_COMPLETION_MODEL;
-  let embeddingBaseUrl = env.EMBEDDING_BASE_URL || env.OPENAI_API_URL;
-  let embeddingApiKey = env.EMBEDDING_API_KEY || env.OPENAI_API_KEY || '';
-  let embeddingModel = env.AI_EMBEDDING_MODEL;
+  let embeddingBaseUrl = instanceEmbedding.baseUrl;
+  let embeddingApiKey = instanceEmbedding.apiKey;
+  let embeddingModel = instanceEmbedding.model;
 
   // Workspace default: pull embedding dimension/model if configured.
   // Lookups are defensive: an unresolvable / invalid id simply falls

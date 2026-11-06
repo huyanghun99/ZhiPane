@@ -530,10 +530,14 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 .home-hero h1 { font-size: 22px; }
 .home-capture { display: flex; align-items: flex-start; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; box-shadow: var(--shadow-sm); }
 .home-capture-icon { color: var(--primary); margin-top: 4px; flex-shrink: 0; }
-.home-capture textarea { border: 0; box-shadow: none; padding: 4px 0; resize: vertical; min-height: 44px; font-size: 15px; }
+.home-capture-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.home-capture textarea { width: 100%; border: 0; box-shadow: none; padding: 4px 0; resize: vertical; min-height: 44px; font-size: 15px; }
 .home-capture textarea:focus { box-shadow: none; }
-.home-capture-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 8px; }
-.home-capture-actions button, .home-empty-actions button { white-space: nowrap; flex-shrink: 0; }
+.home-capture-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.home-capture-hint { margin-right: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.home-capture-actions button, .home-empty-actions button { height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; flex-shrink: 0; }
+.home-empty-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 560px) { .home-capture-hint { display: none; } }
 .home-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .stat-card { flex-direction: column; align-items: flex-start; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--shadow-sm); }
 .stat-card:hover { background: var(--surface-2); }
@@ -805,7 +809,7 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 .crumb-pop-sep { height: 1px; background: var(--border); margin: 4px 0; }
 .crumb-pop-head { font-size: 11px; font-weight: 600; color: var(--muted); padding: 4px 10px 6px; letter-spacing: .04em; }
 .crumb-pop-empty { font-size: 12px; color: var(--muted); padding: 8px 10px; }
-.ws-settings-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex-shrink: 0; border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 9px; cursor: pointer; }
+.ws-settings-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 10px; flex-shrink: 0; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; }
 .ws-settings-btn:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
 
 /* ===== F12: floating AI assistant ===== */
@@ -910,3 +914,10 @@ button.sm { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
 
 /* The shell-level navigation sidebar was removed; its controls now live in
    NavView's own control bar. */
+
+
+/* ===== Agent settings (MCP / CalDAV / AI execution mode) ===== */
+.agent-token-reveal { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px; border: 1px solid var(--primary); border-radius: 9px; background: var(--primary-soft); }
+.agent-token-reveal code { flex: 1 1 260px; min-width: 0; word-break: break-all; font-size: 12px; color: var(--text); }
+.agent-token-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
+.agent-code { margin: 0; padding: 12px; border-radius: 9px; background: var(--surface-2); color: var(--text-2); font-size: 12px; overflow: auto; max-height: 280px; white-space: pre-wrap; word-break: break-word; }

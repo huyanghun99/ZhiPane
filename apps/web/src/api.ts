@@ -419,6 +419,57 @@ export function getAppSettings(): Promise<{ hour: number }> {
   return get('/api/settings/app');
 }
 
+/* ------------------------------------------- Agent / MCP / CalDAV settings --- */
+export const AGENT_SCOPES = [
+  'kb:read', 'kb:write', 'tasks:read', 'tasks:write',
+  'ai:claim', 'ai:submit', 'calendar:read', 'calendar:write'
+] as const;
+
+export type AgentPreferences = {
+  aiExecutionMode: 'internal' | 'external';
+  mcpEnabled: boolean;
+  caldavEnabled: boolean;
+  embedding: {
+    baseUrl: string; model: string; dimension: number;
+    apiKeyMasked: string; hasApiKey: boolean;
+  };
+};
+
+export type AgentToken = {
+  id: string; name: string; workspace_id: string | null; scopes: string[];
+  expires_at: string | null; last_used_at: string | null;
+  revoked_at: string | null; created_at: string;
+};
+
+export function getAgentPreferences(): Promise<AgentPreferences> {
+  return get('/api/agent/preferences');
+}
+export function saveAgentPreferences(input: {
+  aiExecutionMode?: 'internal' | 'external';
+  mcpEnabled?: boolean;
+  caldavEnabled?: boolean;
+  embedding?: { baseUrl?: string; model?: string; dimension?: number; apiKey?: string };
+}): Promise<AgentPreferences> {
+  return put('/api/agent/preferences', input);
+}
+export function listAgentTokens(): Promise<{ tokens: AgentToken[] }> {
+  return get('/api/agent/tokens');
+}
+export function createAgentToken(input: {
+  name: string; scopes: string[]; workspaceId?: string | null; ttlDays?: number;
+}): Promise<{ id: string; token: string; expiresAt: string | null; hint: string }> {
+  return post('/api/agent/tokens', input);
+}
+export function revokeAgentToken(id: string): Promise<{ ok: boolean }> {
+  return del(`/api/agent/tokens/${id}`);
+}
+export function getAgentConfig(): Promise<{
+  workbuddy: { mcpServers: Record<string, unknown> };
+  generic: { mcpServers: Record<string, unknown> };
+}> {
+  return get('/api/agent/config');
+}
+
 export function saveAppSettings(hour: number): Promise<{ ok: boolean; hour: number }> {
   return put('/api/settings/app', { hour });
 }

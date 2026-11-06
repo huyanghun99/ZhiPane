@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Check, Plus, Search, Download, Upload, Pencil, Trash2, Settings as SettingsIcon
+  Check, Plus, Search, Download, Upload, Pencil, Trash2, Settings as SettingsIcon, X
 } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import { useDialog } from '../../components/Dialog';
@@ -281,7 +281,7 @@ export function NavView({ workspace }: { workspace: { id: string } }) {
                     }}
                   >
                     {editMode && (
-                      <button className="nav-card-del" onClick={(e) => { e.stopPropagation(); dialog.confirm({ title: '删除链接', message: '删除该链接？', danger: true }).then((ok) => { if (ok) deleteLinkMut.mutate(link.id); }); }}>×</button>
+                      <button className="nav-card-del" title="删除网址" onClick={(e) => { e.stopPropagation(); dialog.confirm({ title: '删除链接', message: '删除该链接？', danger: true }).then((ok) => { if (ok) deleteLinkMut.mutate(link.id); }); }}><X size={13} /></button>
                     )}
                     <div className="nav-text-icon">{link.iconChar || firstChar(link.name)}</div>
                     <span>{link.name}</span>

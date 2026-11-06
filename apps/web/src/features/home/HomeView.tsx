@@ -98,19 +98,22 @@ export function HomeView({ workspace, space, onSelectPage, onNavigate, onNewNote
       {/* Quick capture */}
       <div className="home-capture">
         <PenLine size={18} className="home-capture-icon" />
-        <textarea
-          value={capture}
-          placeholder="快速记录一个想法…（第一行会作为标题，Ctrl/⌘+Enter 保存）"
-          rows={2}
-          onChange={(e) => setCapture(e.target.value)}
-          onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && capture.trim()) quickCapture.mutate(); }}
-        />
-        <div className="home-capture-actions">
-          <button className="ghost sm" onClick={() => setShowImport(true)}><Upload size={15} /> 导入</button>
-          <button className="ghost sm" onClick={onNewNote}><FileText size={15} /> 新建笔记</button>
-          <button className="primary sm" disabled={!capture.trim() || quickCapture.isPending} onClick={() => quickCapture.mutate()}>
-            {quickCapture.isPending ? <Loader2 className="spin" size={15} /> : <PenLine size={15} />} 记录
-          </button>
+        <div className="home-capture-main">
+          <textarea
+            value={capture}
+            placeholder="快速记录一个想法…（第一行会作为标题，Ctrl/⌘+Enter 保存）"
+            rows={2}
+            onChange={(e) => setCapture(e.target.value)}
+            onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && capture.trim()) quickCapture.mutate(); }}
+          />
+          <div className="home-capture-actions">
+            <span className="home-capture-hint">Ctrl / ⌘ + Enter 快速保存</span>
+            <button className="ghost sm" onClick={() => setShowImport(true)}><Upload size={15} /> 导入</button>
+            <button className="ghost sm" onClick={onNewNote}><FileText size={15} /> 新建笔记</button>
+            <button className="primary sm" disabled={!capture.trim() || quickCapture.isPending} onClick={() => quickCapture.mutate()}>
+              {quickCapture.isPending ? <Loader2 className="spin" size={15} /> : <PenLine size={15} />} 记录
+            </button>
+          </div>
         </div>
       </div>
 

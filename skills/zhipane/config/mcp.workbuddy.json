@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "zhipane": {
+      "type": "http",
+      "url": "https://YOUR_ZHIPANE_HOST/mcp",
+      "headers": {
+        "Authorization": "Bearer ${ZHIPANE_AGENT_TOKEN}"
+      },
+      "description": "ZhiPane 云端知识库 / 任务管理 / CalDAV"
+    }
+  }
+}

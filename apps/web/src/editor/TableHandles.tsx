@@ -103,46 +103,88 @@ export function TableHandles({ editor }: { editor: Editor }) {
   const [drag, setDrag] = useState<DragState>(null);
   const [density, setDensity] = useState<Density>(readDensity);
   const dragRef = useRef<DragState>(null);
+  const hoverRef = useRef<HoverState | null>(null);
+  const clearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearPending = useRef(false);
+  const toolbarLocked = useRef(false);
   dragRef.current = drag;
+  hoverRef.current = hover;
 
   useEffect(() => { applyDensity(editor, density); }, [editor, density]);
 
-  const clearHover = useCallback(() => {
-    if (!dragRef.current) setHover(null);
+  // Any path that unmounts the toolbar must release the lock, otherwise a
+  // later hover would never clear again.
+  useEffect(() => { if (!hover) toolbarLocked.current = false; }, [hover]);
+
+  const cancelClear = useCallback(() => {
+    clearPending.current = false;
+    if (clearTimer.current) {
+      clearTimeout(clearTimer.current);
+      clearTimer.current = null;
+    }
+  }, []);
+
+  /**
+   * The toolbar is rendered outside the ProseMirror DOM, so moving the pointer
+   * from a cell up to the toolbar used to fire `mouseleave` and unmount it
+   * before any button could be clicked. Give the pointer a short grace period
+   * to reach the controls instead of clearing immediately. Only one timer is
+   * queued per exit, so moving around outside the table cannot postpone the
+   * clear indefinitely.
+   */
+  const scheduleClear = useCallback(() => {
+    if (clearPending.current) return;
+    clearPending.current = true;
+    clearTimer.current = setTimeout(() => {
+      clearPending.current = false;
+      clearTimer.current = null;
+      // Once the pointer is on the toolbar, keep it until onMouseLeave
+      // explicitly schedules a fresh clear (avoids a self-rescheduling loop).
+      if (toolbarLocked.current) { clearTimer.current = null; return; }
+      if (!dragRef.current) setHover(null);
+    }, 400);
   }, []);
 
   useEffect(() => {
     const dom = editor.view.dom as HTMLElement;
     if (!dom) return;
 
+    // Listen on window, not on `dom`: pointer events over the floating toolbar
+    // never reach the ProseMirror DOM, but we still need to know the user is
+    // hovering our own controls so the toolbar stays put.
     const onMove = (e: MouseEvent) => {
       if (dragRef.current) return;
       const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-      if (!el) return clearHover();
-      // Keep the current hover while the pointer is over one of our controls.
-      if (el.closest('[data-table-handle]')) return;
+      if (!el) { if (hoverRef.current) scheduleClear(); return; }
+      if (el.closest('[data-table-handle]')) { cancelClear(); return; }
       const cell = el.closest('td, th') as HTMLElement | null;
-      if (!cell || !dom.contains(cell)) return clearHover();
+      if (!cell || !dom.contains(cell)) { if (hoverRef.current) scheduleClear(); return; }
+      cancelClear();
       const tableEl = cell.closest('table') as HTMLTableElement | null;
       const rowEl = cell.closest('tr') as HTMLTableRowElement | null;
-      if (!tableEl || !rowEl) return clearHover();
+      if (!tableEl || !rowEl) return scheduleClear();
       const rows = Array.from(tableEl.querySelectorAll('tr'));
       const rowIndex = rows.indexOf(rowEl);
       const colIndex = Array.from(rowEl.children).indexOf(cell);
       const tablePos = getTablePos(editor, tableEl);
-      if (tablePos == null || !editor.state.doc.nodeAt(tablePos)) return clearHover();
+      if (tablePos == null || !editor.state.doc.nodeAt(tablePos)) return scheduleClear();
       setHover((prev) => (prev && prev.cellEl === cell ? prev : { cellEl: cell, rowEl, tableEl, rowIndex, colIndex, tablePos }));
     };
 
-    dom.addEventListener('mousemove', onMove);
-    dom.addEventListener('mouseleave', clearHover);
-    window.addEventListener('scroll', clearHover, true);
-    return () => {
-      dom.removeEventListener('mousemove', onMove);
-      dom.removeEventListener('mouseleave', clearHover);
-      window.removeEventListener('scroll', clearHover, true);
+    window.addEventListener('mousemove', onMove);
+    // `editor.chain().focus()` on a toolbar click can scroll the caret into
+    // view; don't unmount the toolbar mid-interaction when that happens.
+    const onScroll = () => {
+      if (toolbarLocked.current || dragRef.current) return;
+      scheduleClear();
     };
-  }, [editor, clearHover]);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('scroll', onScroll, true);
+      cancelClear();
+    };
+  }, [editor, cancelClear, scheduleClear]);
 
   // Drag: window-level pointer tracking so it survives DOM reflow mid-drag.
   useEffect(() => {
@@ -183,9 +225,18 @@ export function TableHandles({ editor }: { editor: Editor }) {
   /** Resolve the hovered cell against the LIVE DOM (rows may have been inserted). */
   const liveCell = () => {
     if (!hover) return null;
-    const table = hover.tableEl.isConnected
-      ? hover.tableEl
-      : (editor.view.dom.querySelector('table') as HTMLTableElement | null);
+    let table: HTMLTableElement | null = hover.tableEl.isConnected ? hover.tableEl : null;
+    if (!table) {
+      // ProseMirror may replace the whole <table> element after an insert.
+      // Resolve it again from the (unchanged) document position instead of
+      // blindly grabbing the first table in the document.
+      try {
+        const dom = editor.view.nodeDOM(hover.tablePos) as HTMLElement | null;
+        table = dom instanceof HTMLTableElement
+          ? dom
+          : (dom?.querySelector?.('table') as HTMLTableElement | null) ?? null;
+      } catch { table = null; }
+    }
     const row = table?.querySelectorAll('tr')[hover.rowIndex] as HTMLTableRowElement | undefined;
     const cell = row?.children[hover.colIndex] as HTMLElement | undefined;
     return table && row && cell ? { table, row, cell } : null;
@@ -255,12 +306,14 @@ export function TableHandles({ editor }: { editor: Editor }) {
   const tableRect = hover.tableEl.getBoundingClientRect();
   const toolbarStyle = {
     left: Math.max(8, tableRect.left),
-    top: Math.max(8, tableRect.top - 34)
+    top: Math.max(8, tableRect.top - 40)
   };
 
   return (
     <>
-      <div data-table-handle className="th-toolbar" style={toolbarStyle} contentEditable={false}>
+      <div data-table-handle className="th-toolbar" style={toolbarStyle} contentEditable={false}
+        onMouseEnter={() => { toolbarLocked.current = true; cancelClear(); }}
+        onMouseLeave={() => { toolbarLocked.current = false; scheduleClear(); }}>
         <span className="th-group-label"><Rows3 size={12} /> 行</span>
         <button title="在上方插入行" onClick={() => runCommand('addRowBefore')}><ArrowUpToLine size={13} /><Plus size={10} /></button>
         <button title="在下方插入行" onClick={() => runCommand('addRowAfter')}><ArrowDownToLine size={13} /><Plus size={10} /></button>

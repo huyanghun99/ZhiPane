@@ -23,6 +23,9 @@ import { publicRoutes } from './routes/public';
 import { backupRoutes } from './routes/backups';
 import { taskRoutes } from './routes/tasks';
 import { navRoutes } from './routes/nav';
+import { agentRoutes } from './routes/agent';
+import { mcpRoutes } from './routes/mcp';
+import { caldavRoutes } from './routes/caldav';
 import { healthHandler, diagnosticsHandler, metricsHandler } from './routes/health';
 import { requestIdMiddleware } from './middleware/request-id';
 import { logger } from './services/logger';
@@ -36,7 +39,12 @@ export function createApp() {
     env.NODE_ENV === 'development'
       ? (origin: string | undefined) => origin ?? ''
       : ['http://127.0.0.1:5173', 'http://localhost:5173'];
-  app.use('*', cors({ origin: corsOrigin, credentials: true }));
+  app.use('*', cors({
+    origin: corsOrigin, credentials: true,
+    allowHeaders: ['Content-Type', 'Authorization', 'Depth', 'DAV', 'If-Match', 'If-None-Match', 'Prefer'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'PROPFIND', 'REPORT', 'MKCOL'],
+    exposeHeaders: ['DAV', 'ETag', 'Schedule-Tag', 'Content-Type']
+  }));
   app.use('*', csrfGuard);
   app.use('*', requestIdMiddleware());
   app.get('/health', healthHandler);
@@ -62,6 +70,9 @@ export function createApp() {
   app.route('/api/public', publicRoutes);
   app.route('/api/tasks', taskRoutes);
   app.route('/api/nav', navRoutes);
+  app.route('/api/agent', agentRoutes);
+  app.route('/mcp', mcpRoutes);
+  app.route('/caldav', caldavRoutes);
   // Serve the built web app only when the production bundle exists.
   // In dev the Vite server (5173) handles the UI; this avoids noisy
   // "root path not found" warnings during tests and dev.

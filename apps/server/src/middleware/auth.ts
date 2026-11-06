@@ -21,6 +21,10 @@ export type AppEnv = {
     user: SessionUser;
     /** Opaque session row id (set by authMiddleware). */
     sessionId?: string;
+    /** Populated when the caller authenticated with a scoped Agent token. */
+    agentTokenId?: string;
+    agentScopes?: string[];
+    agentWorkspaceId?: string | null;
   };
 };
 
@@ -136,9 +140,21 @@ export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
   const token =
     getCookie(c, 'zhipane_session') ?? c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
   const sess = await getSessionUserByToken(token);
-  if (!sess) return c.json({ error: 'Unauthorized' }, 401);
-  c.set('user', sess.user);
-  c.set('sessionId', sess.sessionId);
+  if (sess) {
+    c.set('user', sess.user);
+    c.set('sessionId', sess.sessionId);
+    await next();
+    return;
+  }
+  // Fall back to a scoped, revocable Agent token (MCP / CalDAV / external AI).
+  // Imported lazily to avoid a module cycle with agent-auth.ts.
+  const { resolveAgentToken } = await import('./agent-auth');
+  const agent = token ? await resolveAgentToken(token) : null;
+  if (!agent) return c.json({ error: 'Unauthorized' }, 401);
+  c.set('user', agent.user);
+  c.set('agentTokenId', agent.tokenId);
+  c.set('agentScopes', agent.scopes);
+  c.set('agentWorkspaceId', agent.workspaceId);
   await next();
 });
 

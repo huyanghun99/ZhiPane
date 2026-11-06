@@ -3,6 +3,7 @@ import { KeyRound, LogOut, Save } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { post, getAiConfig, saveAiConfig, getAppSettings, saveAppSettings } from '../../api';
 import type { User } from '../../types';
+import { AgentSettings } from './AgentSettings';
 
 const DRIVERS = [
   { value: 'mock', label: 'Mock（不调用真实模型）' },
@@ -131,6 +132,8 @@ export function SettingsView({ me, onLogout, fullWidth, onToggleFullWidth }: {
           </p>
         </div>
       </div>
+
+      <AgentSettings />
 
       <div className="home-card" style={{ marginTop: 16 }}>
         <div className="home-card-head">

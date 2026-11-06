@@ -111,12 +111,6 @@ export function TopBar({ module, workspace, workspaces, onPickWorkspace, onOpenK
           <span className="topbar-brand-name">知行台</span>
         </div>
 
-        {/* Knowledge-base-level settings lives next to the picker; /settings is global. */}
-        {module === 'kb' && (
-          <button className="ws-settings-btn" title="知识库设置" aria-label="知识库设置" onClick={() => onOpenKbSettings?.()}>
-            <Settings2 size={15} />
-          </button>
-        )}
         {/* The knowledge-base picker only makes sense in the kb module. */}
         {module === 'kb' && (
           <div className="topbar-ws" ref={wsRef}>
@@ -148,6 +142,11 @@ export function TopBar({ module, workspace, workspaces, onPickWorkspace, onOpenK
               </div>
             )}
           </div>
+        )}
+        {module === 'kb' && (
+          <button className="ws-settings-btn" title="知识库设置：重命名、AI 策略、自动整理" aria-label="知识库设置" onClick={() => onOpenKbSettings?.()}>
+            <Settings2 size={14} /> <span>设置</span>
+          </button>
         )}
       </div>
 

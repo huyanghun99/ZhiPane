@@ -7,7 +7,7 @@
     "start": "tsx src/index.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "node scripts/prepare-test-db.mjs && vitest run",
     "lint": "eslint src",
     "db:migrate": "tsx src/db/migrate.ts"
   },

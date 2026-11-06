@@ -47,13 +47,26 @@
   font-size: 0.85rem; font-weight: 600; color: var(--muted);
   padding: 0; border: none; background: none;
 }
-.nav-group-actions { margin-left: 10px; display: none; gap: 8px; }
+/* Edit mode: group header becomes a clearly editable surface, with a compact
+   action group pinned to its right edge (no solid red blobs). */
+.nav-group-actions {
+  margin-left: auto; display: none; gap: 3px; padding: 3px;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 9px; box-shadow: var(--shadow-sm);
+}
 .nav-view.edit .nav-group-actions { display: flex; }
-.nav-view .nav-group-head { cursor: default; }
-.nav-view.edit .nav-group-head { cursor: grab; }
+.nav-view .nav-group-head { cursor: default; padding: 4px 8px; border-radius: 10px; }
+.nav-view.edit .nav-group-head {
+  cursor: grab; padding: 5px 8px 5px 10px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+  border: 1px dashed color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+.nav-view.edit .nav-group-title { color: var(--text); font-size: 0.9rem; }
 
-.nav-mini { border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-2); }
-.nav-mini.danger { background: var(--danger); color: #fff; }
+.nav-mini { border: 0; width: 26px; height: 26px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); background: transparent; transition: background .15s, color .15s; }
+.nav-mini:hover { background: var(--primary-soft); color: var(--primary); }
+.nav-mini.danger { background: transparent; color: var(--muted); }
+.nav-mini.danger:hover { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger); }
 
 .nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; min-height: 100px; padding: 4px; }
 
@@ -90,11 +103,14 @@
 .nav-view.edit .nav-card:active { cursor: grabbing; }
 .nav-card.dragging { opacity: 0.4; transform: scale(0.9); border: 1px dashed var(--primary); }
 .nav-card-del {
-  position: absolute; top: -8px; left: -8px; width: 22px; height: 22px; background: var(--danger);
-  border-radius: 50%; color: white; border: 2px solid var(--bg); display: none; align-items: center; justify-content: center;
-  font-size: 14px; z-index: 5; cursor: pointer;
+  position: absolute; top: -7px; right: -7px; width: 24px; height: 24px;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 8px; color: var(--muted); display: none;
+  align-items: center; justify-content: center; z-index: 5; cursor: pointer;
+  box-shadow: var(--shadow-sm); transition: background .15s, color .15s, border-color .15s;
 }
 .nav-view.edit .nav-card-del { display: flex; }
+.nav-card-del:hover { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); border-color: var(--danger); color: var(--danger); }
 .nav-card.nav-add { border: 1px dashed var(--border-strong); background: transparent; box-shadow: none; }
 .nav-card.nav-add:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); box-shadow: var(--shadow-sm); }
 .nav-card.nav-add .nav-text-icon { background: transparent; border-color: var(--border-strong); color: var(--muted); }

@@ -10,6 +10,7 @@ import { generatePageKnowledgeArtifacts } from './page-knowledge.service';
 import { evaluateLifecycle } from './lifecycle.service';
 import { generateClosurePackage, storeClosurePackage } from './closure.service';
 import { logger } from './logger';
+import { getAiExecutionMode } from './app-preferences';
 
 export interface EnqueueInput {
   workspaceId?: string;
@@ -192,7 +193,25 @@ async function processPageLlm(job: any) {
   // BUT persist the failure on the page so it is visible in the UI (Phase 0
   // task 6): no silent "success". Cleared on success.
   try {
-    await generateWikiArtifacts(page, ai);
+    // D2/D3: vectorisation always runs above via the configured embedding
+    // interface. Only LLM Wiki reasoning may be offloaded to a desktop agent.
+    const mode = await getAiExecutionMode();
+    if (mode === 'external') {
+      await enqueueJob({
+        workspaceId: page.workspace_id,
+        spaceId: page.space_id,
+        entityType: 'page',
+        entityId: page.id,
+        type: 'external.wiki_extract',
+        sourceVersion: Number(page.content_version),
+        dedupeKey: `external:wiki:${page.id}`,
+        payload: { title: page.title },
+        priority: 100
+      });
+      logger.info('external wiki job queued', { pageId: page.id });
+    } else {
+      await generateWikiArtifacts(page, ai);
+    }
     await db.execute(sql`UPDATE pages SET wiki_error_message = NULL, updated_at = now() WHERE id = ${page.id}`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

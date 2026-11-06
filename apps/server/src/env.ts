@@ -19,7 +19,13 @@ const envSchema = z.object({
   OPENAI_API_URL: z.string().default('https://api.openai.com/v1'),
   OPENAI_API_KEY: z.string().optional().default(''),
   RAG_RATE_LIMIT_PER_USER_PER_MINUTE: z.coerce.number().int().positive().default(20),
-  RAG_RATE_LIMIT_PER_SPACE_PER_MINUTE: z.coerce.number().int().positive().default(60)
+  RAG_RATE_LIMIT_PER_SPACE_PER_MINUTE: z.coerce.number().int().positive().default(60),
+  // Agent / MCP (cloud deployment): scoped Bearer tokens + external AI jobs.
+  AGENT_MCP_ENABLED: z.coerce.boolean().default(true),
+  AGENT_TOKEN_MAX_TTL_DAYS: z.coerce.number().int().positive().default(90),
+  CALDAV_ENABLED: z.coerce.boolean().default(true),
+  // When NODE_ENV=test, tests MUST use a separate database (see db/client.ts).
+  TEST_DATABASE_URL: z.string().optional()
 });
 
 export const env = envSchema.parse(process.env);
